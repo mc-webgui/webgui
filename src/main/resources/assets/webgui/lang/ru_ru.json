@@ -1,0 +1,10 @@
+{
+  "key.webgui.main_menu": "Главное меню",
+  "key.webgui.hud_interactive": "HUD: интерактивный режим",
+  "key.categories.webgui.web": "WebGUI",
+  "screen.webgui.title": "Веб",
+  "screen.webgui.url": "URL",
+  "message.webgui.mcef_not_ready": "WebGUI ещё не готов. Дождитесь загрузки Chromium или проверьте лог.",
+  "message.webgui.hud_interactive_on": "Веб-HUD: интерактивный режим (псевдо-GUI). Нажмите снова для выхода.",
+  "message.webgui.hud_interactive_off": "Веб-HUD: только просмотр. Нажмите клавишу интерактивного режима для ввода."
+}

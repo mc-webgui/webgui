@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MCStory WebView — старт</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <h1>Локальная демо-страница</h1>
+  <p>Это HTML из ресурсов мода <code>mcstory_webview</code> (file://).</p>
+  <p><a href="page2.html">Перейти на вторую страницу</a></p>
+  <p><a href="https://example.com">Внешняя ссылка (example.com)</a></p>
+  <script>
+    document.body.addEventListener("click", function (e) {
+      if (e.target.tagName === "A") console.log("nav:", e.target.href);
+    });
+    window.mcstory = window.mcstory || {};
+    window.mcstory.onClientInfo = function (info) {
+      var el = document.getElementById("mcstory-client-dump");
+      if (el) el.textContent = JSON.stringify(info, null, 2);
+    };
+  </script>
+  <pre id="mcstory-client-dump" style="margin-top:1rem;padding:0.75rem;background:#111827;color:#e5e7eb;border-radius:6px;overflow:auto;max-height:40vh;"></pre>
+</body>
+</html>

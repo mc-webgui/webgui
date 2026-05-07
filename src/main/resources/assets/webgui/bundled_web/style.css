@@ -1,0 +1,14 @@
+body {
+  font-family: system-ui, Segoe UI, Roboto, sans-serif;
+  margin: 1.5rem;
+  background: #1a1b26;
+  color: #c0caf5;
+}
+a {
+  color: #7aa2f7;
+}
+code {
+  background: #24283b;
+  padding: 0.15rem 0.35rem;
+  border-radius: 4px;
+}

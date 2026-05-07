@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "land.webgui.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "MouseMixin",
+    "CefUtilMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

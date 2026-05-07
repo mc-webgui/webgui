@@ -1,0 +1,18 @@
+* text=auto eol=lf
+gradlew text eol=lf
+gradlew.bat text eol=crlf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+*.sh text eol=lf
+*.java text
+*.json text
+*.properties text
+*.pro text
+*.yml text
+*.yaml text
+
+# Бинарники
+*.jar binary
+*.zip binary
+*.png binary
+*.ttf binary

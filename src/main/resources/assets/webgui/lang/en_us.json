@@ -1,0 +1,10 @@
+{
+  "key.webgui.main_menu": "Main menu",
+  "key.webgui.hud_interactive": "HUD: interactive mode",
+  "key.categories.webgui.web": "WebGUI",
+  "screen.webgui.title": "Web",
+  "screen.webgui.url": "URL",
+  "message.webgui.mcef_not_ready": "WebGUI is not ready yet. Wait for Chromium to finish loading or check the log.",
+  "message.webgui.hud_interactive_on": "Web HUD: interactive mode (pseudo-GUI). Press the key again to exit.",
+  "message.webgui.hud_interactive_off": "Web HUD: view only. Press the interactive mode key to enable input."
+}

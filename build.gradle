@@ -1,0 +1,92 @@
+plugins {
+    id 'fabric-loom' version '1.13.+'
+    id 'maven-publish'
+}
+
+def mcProfile = project.findProperty('mc') ?: '1.21.11'
+def vProps = new Properties()
+def vFile = file("versions/${mcProfile}.properties")
+if (!vFile.exists()) {
+    throw new GradleException("No versions/${mcProfile}.properties found.")
+}
+vFile.withInputStream { vProps.load(it) }
+
+version = "${project.mod_version}+mc${vProps.minecraft_version}"
+group   = project.maven_group
+
+base {
+    archivesName = project.archives_base_name
+}
+
+repositories {
+    mavenCentral()
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'Modrinth'
+                url = 'https://api.modrinth.com/maven'
+            }
+        }
+        filter {
+            includeGroup 'maven.modrinth'
+        }
+    }
+
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${vProps.minecraft_version}"
+    mappings  "net.fabricmc:yarn:${vProps.yarn_mappings}:v2"
+    modImplementation "net.fabricmc:fabric-loader:${vProps.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${vProps.fabric_version}"
+    include(modImplementation("maven.modrinth:mcef-keksuccino:${vProps.mcef_version}"))
+    include(modImplementation("me.lucko:fabric-permissions-api:0.6.1"))
+}
+
+processResources {
+    inputs.property 'version',         project.version
+    inputs.property 'minecraft_range', vProps.minecraft_range
+    filesMatching('fabric.mod.json') {
+        expand version: project.version, minecraft_range: vProps.minecraft_range
+    }
+}
+
+/** Increments mod_version patch in gradle.properties (1.0.0 → 1.0.1). */
+tasks.register('bumpPatch') {
+    group = 'versioning'
+    description = 'Increments mod_version patch in gradle.properties'
+    doLast {
+        def f = rootProject.file('gradle.properties')
+        def lines = f.readLines('UTF-8')
+        def newLines = []
+        def bumped = false
+        lines.each { line ->
+            if (line.startsWith('mod_version=')) {
+                def oldV = line.substring('mod_version='.length()).trim()
+                def parts = oldV.split('\\.')
+                if (parts.length < 3) throw new GradleException("mod_version must be semver x.y.z, got: $oldV")
+                def p = parts[2].replaceAll(/[^0-9].*$/, '')
+                if (!p) throw new GradleException("bad patch in mod_version: $oldV")
+                def newV = "${parts[0]}.${parts[1]}.${p.toInteger() + 1}"
+                newLines.add("mod_version=${newV}")
+                bumped = true
+                println "[bumpPatch] ${oldV} -> ${newV}"
+            } else {
+                newLines.add(line)
+            }
+        }
+        if (!bumped) throw new GradleException("mod_version= not found in gradle.properties")
+        f.write(newLines.join(System.lineSeparator()) + System.lineSeparator(), 'UTF-8')
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.encoding = 'UTF-8'
+    it.options.release = 21
+}
+
+java {
+    withSourcesJar()
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
