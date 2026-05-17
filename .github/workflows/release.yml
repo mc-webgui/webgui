@@ -1,0 +1,71 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - '[0-9]+.[0-9]+.[0-9]+'
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  release:
+    name: 'Build & Release · MC ${{ github.ref_name }}'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate version file
+        run: |
+          mc="${{ github.ref_name }}"
+          if [ ! -f "versions/${mc}.properties" ]; then
+            echo "::error::versions/${mc}.properties not found — create it before merging into this branch"
+            exit 1
+          fi
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build
+        run: ./gradlew build --no-daemon -Pmc=${{ github.ref_name }}
+        env:
+          GRADLE_OPTS: -Xmx2g
+
+      - name: Resolve artifact name
+        id: meta
+        run: |
+          mc="${{ github.ref_name }}"
+          an=$(grep '^archives_base_name=' gradle.properties | cut -d= -f2- | tr -d '\r ')
+          modv=$(grep '^mod_version=' gradle.properties | cut -d= -f2- | tr -d '\r ')
+          mcv=$(grep '^minecraft_version=' "versions/${mc}.properties" | cut -d= -f2- | tr -d '\r ')
+          artifact="${an}-${modv}+mc${mcv}"
+          echo "artifact=${artifact}" >> "$GITHUB_OUTPUT"
+          echo "mod_version=${modv}" >> "$GITHUB_OUTPUT"
+          echo "mc_version=${mcv}" >> "$GITHUB_OUTPUT"
+          echo "tag=v${modv}+mc${mcv}" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: 'v${{ steps.meta.outputs.mod_version }} for MC ${{ steps.meta.outputs.mc_version }}'
+          body: |
+            **Mod version:** `${{ steps.meta.outputs.mod_version }}`
+            **Minecraft:** `${{ steps.meta.outputs.mc_version }}`
+            **Branch:** `${{ github.ref_name }}`
+            **Commit:** ${{ github.sha }}
+          files: |
+            build/libs/${{ steps.meta.outputs.artifact }}.jar
+            build/libs/${{ steps.meta.outputs.artifact }}-sources.jar
+          fail_on_unmatched_files: false
