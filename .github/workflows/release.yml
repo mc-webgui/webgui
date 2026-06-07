@@ -2,70 +2,64 @@ name: Release
 
 on:
   push:
-    branches:
-      - '[0-9]+.[0-9]+.[0-9]+'
+    branches: [main]
 
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-main
   cancel-in-progress: true
 
 jobs:
   release:
-    name: 'Build & Release · MC ${{ github.ref_name }}'
+    name: Build & Release
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
 
-      - name: Validate version file
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read version
+        id: meta
         run: |
-          mc="${{ github.ref_name }}"
-          if [ ! -f "versions/${mc}.properties" ]; then
-            echo "::error::versions/${mc}.properties not found — create it before merging into this branch"
-            exit 1
+          modv=$(grep '^mod_version=' gradle.properties | cut -d= -f2- | tr -d '\r ')
+          echo "version=${modv}" >> "$GITHUB_OUTPUT"
+          echo "tag=v${modv}" >> "$GITHUB_OUTPUT"
+
+      - name: Skip if tag already exists
+        id: check
+        run: |
+          if git ls-remote --tags origin "refs/tags/v${{ steps.meta.outputs.version }}" | grep -q .; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Tag v${{ steps.meta.outputs.version }} already exists — skipping release."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Set up Java
+        if: steps.check.outputs.skip == 'false'
         uses: actions/setup-java@v4
         with:
           java-version: '21'
-          distribution: 'temurin'
-          cache: 'gradle'
+          distribution: temurin
+          cache: gradle
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
-
-      - name: Build
-        run: ./gradlew build --no-daemon -Pmc=${{ github.ref_name }}
+      - name: Build all versions
+        if: steps.check.outputs.skip == 'false'
+        run: |
+          chmod +x gradlew
+          ./gradlew build --no-daemon
         env:
           GRADLE_OPTS: -Xmx2g
 
-      - name: Resolve artifact name
-        id: meta
-        run: |
-          mc="${{ github.ref_name }}"
-          an=$(grep '^archives_base_name=' gradle.properties | cut -d= -f2- | tr -d '\r ')
-          modv=$(grep '^mod_version=' gradle.properties | cut -d= -f2- | tr -d '\r ')
-          mcv=$(grep '^minecraft_version=' "versions/${mc}.properties" | cut -d= -f2- | tr -d '\r ')
-          artifact="${an}-${modv}+mc${mcv}"
-          echo "artifact=${artifact}" >> "$GITHUB_OUTPUT"
-          echo "mod_version=${modv}" >> "$GITHUB_OUTPUT"
-          echo "mc_version=${mcv}" >> "$GITHUB_OUTPUT"
-          echo "tag=v${modv}+mc${mcv}" >> "$GITHUB_OUTPUT"
-
       - name: Create GitHub Release
+        if: steps.check.outputs.skip == 'false'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.meta.outputs.tag }}
-          name: 'v${{ steps.meta.outputs.mod_version }} for MC ${{ steps.meta.outputs.mc_version }}'
-          body: |
-            **Mod version:** `${{ steps.meta.outputs.mod_version }}`
-            **Minecraft:** `${{ steps.meta.outputs.mc_version }}`
-            **Branch:** `${{ github.ref_name }}`
-            **Commit:** ${{ github.sha }}
+          name: v${{ steps.meta.outputs.version }}
           files: |
-            build/libs/${{ steps.meta.outputs.artifact }}.jar
-            build/libs/${{ steps.meta.outputs.artifact }}-sources.jar
+            versions/*/build/libs/*.jar
+            !versions/*/build/libs/*-dev.jar
           fail_on_unmatched_files: false
