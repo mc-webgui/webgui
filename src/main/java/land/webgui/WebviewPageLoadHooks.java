@@ -2,7 +2,11 @@ package land.webgui;
 
 import com.cinemamod.mcef.MCEF;
 import com.cinemamod.mcef.MCEFBrowser;
+//? if fabric {
 import net.minecraft.client.MinecraftClient;
+//? } else {
+/*import net.minecraft.client.Minecraft;*/
+//? }
 import org.cef.browser.CefBrowser;
 import org.cef.browser.CefFrame;
 import org.cef.handler.CefLoadHandler;
@@ -33,7 +37,11 @@ public final class WebviewPageLoadHooks {
 
                 injectBridgeScript(active);
 
+                //? if fabric {
                 MinecraftClient mc = MinecraftClient.getInstance();
+                //? } else {
+                /*Minecraft mc = Minecraft.getInstance();*/
+                //? }
                 if (mc != null) {
                     mc.execute(() -> WebviewClientBridge.pushAfterDocumentLoad(mc));
                 }

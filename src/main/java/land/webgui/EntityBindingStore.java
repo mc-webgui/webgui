@@ -3,7 +3,11 @@ package land.webgui;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import land.webgui.server.EntityBinding;
+//? if fabric {
 import net.fabricmc.loader.api.FabricLoader;
+//? } else {
+/*import net.neoforged.fml.loading.FMLPaths;*/
+//? }
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -34,7 +38,11 @@ public final class EntityBindingStore {
     }
 
     private static Path storePath() {
+        //? if fabric {
         return FabricLoader.getInstance().getConfigDir().resolve("webgui").resolve("entity_bindings.json");
+        //? } else {
+        /*return FMLPaths.CONFIGDIR.get().resolve("webgui").resolve("entity_bindings.json");*/
+        //? }
     }
 
     public static void bind(UUID entityUuid, EntityBinding binding) {

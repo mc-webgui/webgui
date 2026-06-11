@@ -4,7 +4,11 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import land.webgui.WebGUIMod;
+//? if fabric {
 import net.fabricmc.loader.api.FabricLoader;
+//? } else {
+/*import net.neoforged.fml.loading.FMLPaths;*/
+//? }
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -18,7 +22,11 @@ public final class WebviewServerConfig {
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private static Path configPath() {
+        //? if fabric {
         return FabricLoader.getInstance().getConfigDir().resolve("webgui").resolve("server.json");
+        //? } else {
+        /*return FMLPaths.CONFIGDIR.get().resolve("webgui").resolve("server.json");*/
+        //? }
     }
 
     private Boolean enableTokens;
@@ -39,7 +47,11 @@ public final class WebviewServerConfig {
     private WebviewServerConfig() {}
 
     private static Path examplePath() {
+        //? if fabric {
         return FabricLoader.getInstance().getConfigDir().resolve("webgui").resolve("server.example.json");
+        //? } else {
+        /*return FMLPaths.CONFIGDIR.get().resolve("webgui").resolve("server.example.json");*/
+        //? }
     }
 
     private static void writeExample() {

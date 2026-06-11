@@ -4,7 +4,11 @@ import land.webgui.EntityBindingStore;
 import land.webgui.WebviewNetworking;
 import land.webgui.server.EntityBinding;
 import land.webgui.server.WebviewServerEvents;
+//? if fabric {
 import net.minecraft.server.network.ServerPlayerEntity;
+//? } else {
+/*import net.minecraft.server.level.ServerPlayer;*/
+//? }
 
 import java.util.Optional;
 import java.util.UUID;
@@ -14,6 +18,7 @@ import java.util.function.BiConsumer;
 public final class WebviewApi {
     private WebviewApi() {}
 
+    //? if fabric {
     /** If signed tokens are enabled in server.json, a token is appended to the URL automatically. */
     public static void openGui(ServerPlayerEntity player, String url) {
         WebviewNetworking.openGui(player, url);
@@ -55,6 +60,28 @@ public final class WebviewApi {
         WebviewServerEvents.PAGE_EVENT.register(
                 (player, ch, payload) -> { if (ch.equals(channel)) handler.accept(player, payload); });
     }
+    //? } else {
+    /*public static void openGui(ServerPlayer player, String url) {
+        WebviewNetworking.openGui(player, url);
+    }
+
+    public static void openHud(ServerPlayer player, String url) {
+        WebviewNetworking.openHud(player, url);
+    }
+
+    public static void sendMainMenuUrl(ServerPlayer player, String url) {
+        WebviewNetworking.sendMainMenuUrl(player, url);
+    }
+
+    public static void emitToPage(ServerPlayer player, String eventName, String jsonPayload) {
+        WebviewNetworking.emitToPage(player, eventName, jsonPayload);
+    }
+
+    public static void onPageEvent(String channel, BiConsumer<ServerPlayer, String> handler) {
+        WebviewServerEvents.registerHandler(
+                (player, ch, payload) -> { if (ch.equals(channel)) handler.accept(player, payload); });
+    }*/
+    //? }
 
     /**
      * Binds an entity to a WebGUI URL. When a player right-clicks the entity, the GUI opens.
