@@ -1,0 +1,26 @@
+modLoader = "javafml"
+loaderVersion = "[4,)"
+license = "MIT"
+
+[[mods]]
+modId = "webgui"
+version = "${version}"
+displayName = "WebGUI"
+description = "Web-based GUI framework for Minecraft — open any web page as a full-screen GUI or HUD overlay."
+
+[[dependencies.webgui]]
+modId = "neoforge"
+type = "required"
+versionRange = "[21,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.webgui]]
+modId = "minecraft"
+type = "required"
+versionRange = "${minecraft_range}"
+ordering = "NONE"
+side = "BOTH"
+
+[[mixins]]
+config = "webgui.mixins.json"

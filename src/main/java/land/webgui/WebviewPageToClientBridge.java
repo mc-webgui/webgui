@@ -5,8 +5,17 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
+//? if fabric {
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.MinecraftClient;
+//? } else {
+/*import net.minecraft.client.Minecraft;
+//? if >=1.21.5 {
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
+//? } else {
+import net.neoforged.neoforge.network.PacketDistributor;
+//? }*/
+//? }
 import org.cef.browser.CefBrowser;
 import org.cef.browser.CefFrame;
 import org.cef.browser.CefMessageRouter;
@@ -60,11 +69,24 @@ public final class WebviewPageToClientBridge {
                 log(level, msg);
             }
             case "close" -> {
+                //? if fabric {
                 MinecraftClient mc = MinecraftClient.getInstance();
+                //? } else {
+                /*Minecraft mc = Minecraft.getInstance();*/
+                //? }
                 mc.execute(() -> {
+                    //? if fabric {
                     if (mc.currentScreen instanceof WebViewScreen) {
                         mc.currentScreen.close();
+                    //? } else {
+                    /*if (mc.screen instanceof WebViewScreen) {
+                        mc.screen.onClose();*/
+                    //? }
+                    //? if fabric {
                     } else if (WebHudOverlay.isHudVisible()) {
+                    //? } else {
+                    /*} else if (WebHudOverlay.isHudVisible()) {*/
+                    //? }
                         WebHudOverlay.toggleHud(mc);
                     }
                 });
@@ -74,8 +96,16 @@ public final class WebviewPageToClientBridge {
                     WebGUIMod.LOGGER.warn("[webgui page→game] [{}] payload too large ({} bytes), dropping", channel, request.length());
                     break;
                 }
+                //? if fabric {
                 MinecraftClient mc = MinecraftClient.getInstance();
+                //? } else {
+                /*Minecraft mc = Minecraft.getInstance();*/
+                //? }
+                //? if fabric {
                 if (mc.getNetworkHandler() != null) {
+                //? } else {
+                /*if (mc.getConnection() != null) {*/
+                //? }
                     String ch  = channel;
                     String pay = request;
                     mc.execute(() -> sendToServer(ch, pay));
@@ -98,6 +128,7 @@ public final class WebviewPageToClientBridge {
     }
 
     private static void sendToServer(String channel, String jsonPayload) {
+        //? if fabric {
         //? if >=1.20.5 {
         if (ClientPlayNetworking.canSend(WebviewPayloads.WebviewPageEventC2SPayload.ID)) {
             ClientPlayNetworking.send(new WebviewPayloads.WebviewPageEventC2SPayload(channel, jsonPayload));
@@ -107,6 +138,13 @@ public final class WebviewPageToClientBridge {
         buf.writeString(channel, WebviewPayloads.MAX_EVENT_NAME_LENGTH);
         buf.writeString(jsonPayload, WebviewPayloads.MAX_EVENT_DATA_LENGTH);
         ClientPlayNetworking.send(WebviewPayloads.PAGE_EVENT_CHANNEL, buf);*/
+        //? }
+        //? } else {
+        /*//? if >=1.21.5 {
+        ClientPacketDistributor.sendToServer(new WebviewPayloads.WebviewPageEventC2SPayload(channel, jsonPayload));
+        //? } else {
+        PacketDistributor.sendToServer(new WebviewPayloads.WebviewPageEventC2SPayload(channel, jsonPayload));
+        //? }*/
         //? }
     }
 

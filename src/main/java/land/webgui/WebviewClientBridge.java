@@ -4,8 +4,13 @@ import com.cinemamod.mcef.MCEF;
 import com.cinemamod.mcef.MCEFBrowser;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+//? if fabric {
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
+//? } else {
+/*import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;*/
+//? }
 
 public final class WebviewClientBridge {
     private static final Gson GSON = new Gson();
@@ -25,23 +30,40 @@ public final class WebviewClientBridge {
         pendingEntityContextJson = null;
     }
 
+    //? if fabric {
     public static void tick(MinecraftClient client) {
+    //? } else {
+    /*public static void tick(Minecraft client) {*/
+    //? }
         tryPush(client, true, false);
     }
 
+    //? if fabric {
     /** Always pushes, regardless of dedup — page must get data on first load. */
     public static void pushAfterDocumentLoad(MinecraftClient client) {
+    //? } else {
+    /*public static void pushAfterDocumentLoad(Minecraft client) {*/
+    //? }
         tryPush(client, false, true);
     }
 
+    //? if fabric {
     private static void tryPush(MinecraftClient client, boolean requireTexture, boolean ignoreDedup) {
-        if (!MCEF.isInitialized()) return;
         ClientPlayerEntity player = client.player;
+    //? } else {
+    /*private static void tryPush(Minecraft client, boolean requireTexture, boolean ignoreDedup) {
+        LocalPlayer player = client.player;*/
+    //? }
+        if (!MCEF.isInitialized()) return;
         if (player == null) return;
 
         MCEFBrowser main = WebSession.browser();
         MCEFBrowser hud  = WebSession.hudBrowser();
+        //? if fabric {
         boolean hasMain = main != null && (!requireTexture || main.isTextureReady());
+        //? } else {
+        /*boolean hasMain = main != null && (!requireTexture || main.getRenderer().getTextureID() != 0);*/
+        //? }
         boolean hasHud  = hud  != null && hud != main;
         if (!hasMain && !hasHud) return;
 
@@ -77,6 +99,7 @@ public final class WebviewClientBridge {
         }
     }
 
+    //? if fabric {
     private static JsonObject buildPayload(MinecraftClient client, ClientPlayerEntity player) {
         JsonObject o = new JsonObject();
 
@@ -113,4 +136,46 @@ public final class WebviewClientBridge {
         }
         return s;
     }
+    //? } else {
+    /*private static JsonObject buildPayload(Minecraft client, LocalPlayer player) {
+        JsonObject o = new JsonObject();
+
+        o.addProperty("playerUuid",  player.getUUID().toString());
+        o.addProperty("username",    player.getName().getString());
+        o.addProperty("webviewMode", WebSession.mode().name());
+        //? if >=1.21.5 {
+        o.addProperty("dimension",   player.level().dimension().identifier().toString());
+        //? } else {
+        o.addProperty("dimension",   player.level().dimension().location().toString());
+        //? }
+
+        JsonObject pos = new JsonObject();
+        pos.addProperty("x", player.getX());
+        pos.addProperty("y", player.getY());
+        pos.addProperty("z", player.getZ());
+        o.add("pos", pos);
+
+        JsonObject server = buildServerInfo(client);
+        if (server != null) o.add("server", server);
+
+        return o;
+    }
+
+    private static JsonObject buildServerInfo(Minecraft client) {
+        var nh = client.getConnection();
+        if (nh == null) return null;
+        JsonObject s = new JsonObject();
+        var entry = client.getCurrentServer();
+        if (entry != null) {
+            s.addProperty("address", entry.ip);
+            if (entry.ping >= 0) s.addProperty("ping", entry.ping);
+        } else {
+            var conn = nh.getConnection();
+            if (conn != null && conn.getRemoteAddress() != null) {
+                s.addProperty("address", conn.getRemoteAddress().toString().replaceFirst("^/", ""));
+            }
+        }
+        return s;
+    }*/
+    //? }
 }

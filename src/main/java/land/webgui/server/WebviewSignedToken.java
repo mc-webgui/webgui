@@ -9,7 +9,11 @@ import java.util.Base64;
 import java.util.Optional;
 import java.util.UUID;
 
+//? if fabric {
 import net.minecraft.server.network.ServerPlayerEntity;
+//? } else {
+/*import net.minecraft.server.level.ServerPlayer;*/
+//? }
 
 public final class WebviewSignedToken {
     private static final String HMAC_SHA256 = "HmacSHA256";
@@ -18,13 +22,21 @@ public final class WebviewSignedToken {
 
     private WebviewSignedToken() {}
 
+    //? if fabric {
     public static String create(ServerPlayerEntity player) {
+    //? } else {
+    /*public static String create(ServerPlayer player) {*/
+    //? }
         byte[] secret = WebviewServerConfig.tokenSecretBytes();
         if (secret.length == 0) {
             return "";
         }
         long exp = Instant.now().getEpochSecond() + WebviewServerConfig.tokenTtlSeconds();
+        //? if fabric {
         String payload = "1|" + player.getUuid() + "|" + exp;
+        //? } else {
+        /*String payload = "1|" + player.getUUID() + "|" + exp;*/
+        //? }
         byte[] sig = hmac(secret, payload.getBytes(StandardCharsets.UTF_8));
         var enc = Base64.getUrlEncoder().withoutPadding();
         return enc.encodeToString(payload.getBytes(StandardCharsets.UTF_8)) + "." + enc.encodeToString(sig);

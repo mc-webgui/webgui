@@ -3,9 +3,14 @@ package land.webgui.server;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import land.webgui.WebGUIMod;
+//? if fabric {
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.SemanticVersion;
 import net.fabricmc.loader.api.VersionParsingException;
+//? } else {
+/*import net.neoforged.fml.ModList;
+import org.apache.maven.artifact.versioning.DefaultArtifactVersion;*/
+//? }
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -21,10 +26,17 @@ public final class WebGUIUpdateChecker {
         if (url.isEmpty()) {
             return;
         }
+        //? if fabric {
         String current = FabricLoader.getInstance()
                 .getModContainer(WebGUIMod.MOD_ID)
                 .map(c -> c.getMetadata().getVersion().getFriendlyString())
                 .orElse("");
+        //? } else {
+        /*String current = ModList.get()
+                .getModContainerById(WebGUIMod.MOD_ID)
+                .map(c -> c.getModInfo().getVersion().toString())
+                .orElse("");*/
+        //? }
         if (current.isEmpty()) {
             return;
         }
@@ -86,6 +98,7 @@ public final class WebGUIUpdateChecker {
         String local  = stripBuildMeta(current.trim().replaceFirst("^[vV]", ""));
 
         boolean newer;
+        //? if fabric {
         try {
             newer = SemanticVersion.parse(remote).compareTo(SemanticVersion.parse(local)) > 0;
         } catch (VersionParsingException e) {
@@ -93,6 +106,9 @@ public final class WebGUIUpdateChecker {
             WebGUIMod.LOGGER.debug("webgui: update check: could not compare versions '{}' vs '{}': {}", remote, local, e.getMessage());
             return;
         }
+        //? } else {
+        /*newer = new DefaultArtifactVersion(remote).compareTo(new DefaultArtifactVersion(local)) > 0;*/
+        //? }
 
         if (newer) {
             WebGUIMod.LOGGER.info("┌─────────────────────────────────────────────────");
