@@ -23,7 +23,10 @@ if (sc_loader != "fabric") {
 }
 
 base {
-    archivesName = archives_base_name
+    // Include the loader so Fabric and NeoForge jars for the same MC version
+    // don't share a filename — otherwise flat release assets overwrite each
+    // other and only one loader survives.
+    archivesName = "${archives_base_name}-${sc_loader}"
 }
 
 // Apply the loader-specific plugin after the stonecutter constants are set
