@@ -99,6 +99,15 @@ public final class WebviewClientBridge {
         }
     }
 
+    /**
+     * Strips the leading slash that {@link java.net.SocketAddress#toString()} prepends
+     * (e.g. {@code /127.0.0.1:25565}). Done with plain string ops on purpose: feeding the
+     * address to a regex (replaceFirst) crashes the game when it contains meta characters.
+     */
+    private static String stripLeadingSlash(String address) {
+        return address.startsWith("/") ? address.substring(1) : address;
+    }
+
     //? if fabric {
     private static JsonObject buildPayload(MinecraftClient client, ClientPlayerEntity player) {
         JsonObject o = new JsonObject();
@@ -131,7 +140,7 @@ public final class WebviewClientBridge {
         } else {
             var conn = nh.getConnection();
             if (conn != null && conn.getAddress() != null) {
-                s.addProperty("address", conn.getAddress().toString().replaceFirst("^/", ""));
+                s.addProperty("address", stripLeadingSlash(conn.getAddress().toString()));
             }
         }
         return s;
@@ -172,7 +181,7 @@ public final class WebviewClientBridge {
         } else {
             var conn = nh.getConnection();
             if (conn != null && conn.getRemoteAddress() != null) {
-                s.addProperty("address", conn.getRemoteAddress().toString().replaceFirst("^/", ""));
+                s.addProperty("address", stripLeadingSlash(conn.getRemoteAddress().toString()));
             }
         }
         return s;
