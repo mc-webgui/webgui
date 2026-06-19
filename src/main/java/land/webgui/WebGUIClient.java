@@ -4,10 +4,12 @@ import com.cinemamod.mcef.MCEF;
 //? if fabric {
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 //? } else {
 /*import net.minecraft.client.Minecraft;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;*/
@@ -83,6 +85,16 @@ public final class WebGUIClient
             WebGUIKeys.tick(client);
             WebviewClientBridge.tick(client);
         });
+
+        // Leaving a world (disconnect / exit to title) tears down any server-opened HUD or GUI
+        // browser so it doesn't keep rendering in the background on the main menu.
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> client.execute(WebGUIClient::onLeaveWorld));
+    }
+
+    private static void onLeaveWorld() {
+        WebHudOverlay.reset();
+        WebSession.dispose();
+        WebGUIMainMenuUrl.setUrl("");
     }
 
     private static void handleOpenPayload(net.minecraft.client.MinecraftClient client, int mode, String url) {
@@ -117,6 +129,19 @@ public final class WebGUIClient
         WebGUIKeys.register(modBus);
         WebHudOverlay.register();
         NeoForge.EVENT_BUS.addListener(WebGUIClient::onClientTick);
+        NeoForge.EVENT_BUS.addListener(WebGUIClient::onLoggingOut);
+    }
+
+    private static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+        onLeaveWorld();
+    }
+
+    // Leaving a world (disconnect / exit to title) tears down any server-opened HUD or GUI
+    // browser so it doesn't keep rendering in the background on the main menu.
+    private static void onLeaveWorld() {
+        WebHudOverlay.reset();
+        WebSession.dispose();
+        WebGUIMainMenuUrl.setUrl("");
     }
 
     static void onRegisterPayloads(RegisterPayloadHandlersEvent event) {
