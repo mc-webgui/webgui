@@ -117,11 +117,23 @@ public final class WebviewClientBridge {
         o.addProperty("webviewMode", WebSession.mode().name());
         o.addProperty("dimension",   player.getEntityWorld().getRegistryKey().getValue().toString());
 
+        o.addProperty("health",    player.getHealth());
+        o.addProperty("maxHealth", player.getMaxHealth());
+        o.addProperty("food",      player.getHungerManager().getFoodLevel());
+        o.addProperty("xpLevel",   player.experienceLevel);
+        var gameMode = client.interactionManager != null ? client.interactionManager.getCurrentGameMode() : null;
+        if (gameMode != null) o.addProperty("gamemode", gameMode.asString());
+
         JsonObject pos = new JsonObject();
         pos.addProperty("x", player.getX());
         pos.addProperty("y", player.getY());
         pos.addProperty("z", player.getZ());
         o.add("pos", pos);
+
+        JsonObject look = new JsonObject();
+        look.addProperty("yaw",   player.getYaw());
+        look.addProperty("pitch", player.getPitch());
+        o.add("look", look);
 
         JsonObject server = buildServerInfo(client);
         if (server != null) o.add("server", server);
@@ -158,11 +170,23 @@ public final class WebviewClientBridge {
         o.addProperty("dimension",   player.level().dimension().location().toString());
         //? }
 
+        o.addProperty("health",    player.getHealth());
+        o.addProperty("maxHealth", player.getMaxHealth());
+        o.addProperty("food",      player.getFoodData().getFoodLevel());
+        o.addProperty("xpLevel",   player.experienceLevel);
+        var gameMode = client.gameMode != null ? client.gameMode.getPlayerMode() : null;
+        if (gameMode != null) o.addProperty("gamemode", gameMode.getName());
+
         JsonObject pos = new JsonObject();
         pos.addProperty("x", player.getX());
         pos.addProperty("y", player.getY());
         pos.addProperty("z", player.getZ());
         o.add("pos", pos);
+
+        JsonObject look = new JsonObject();
+        look.addProperty("yaw",   player.getYRot());
+        look.addProperty("pitch", player.getXRot());
+        o.add("look", look);
 
         JsonObject server = buildServerInfo(client);
         if (server != null) o.add("server", server);
