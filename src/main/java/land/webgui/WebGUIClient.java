@@ -10,7 +10,7 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;*/
+import net.neoforged.neoforge.network.handling.IPayloadContext;*/
 //? }
 
 public final class WebGUIClient
@@ -112,26 +112,26 @@ public final class WebGUIClient
             WebGUIMod.LOGGER.info("WebGUI bridge ready (console log, page<->game, client data).");
         });
 
-        // Payload registration moved to common init (WebGUIMod) so the dedicated
-        // server also registers the S2C channels — see issue #4.
+        // Payload registration moved to WebGUIPayloadRegistration (common class)
+        // so the dedicated server never loads WebGUIClient. Handler methods below
+        // are dispatched via INVOKESTATIC from there — lazy resolve means
+        // WebGUIClient stays un-loaded on the server. See issue #9.
         WebGUIKeys.register(modBus);
         WebHudOverlay.register();
         NeoForge.EVENT_BUS.addListener(WebGUIClient::onClientTick);
     }
 
-    static void onRegisterPayloads(RegisterPayloadHandlersEvent event) {
-        final var reg = event.registrar("1");
-        reg.playToClient(WebviewPayloads.OpenWebS2CPayload.TYPE, WebviewPayloads.OpenWebS2CPayload.STREAM_CODEC,
-                (payload, ctx) -> {
-                    if (payload.protocolVersion() != WebviewNetworking.PROTOCOL_VERSION) return;
-                    ctx.enqueueWork(() -> handleOpenPayload(Minecraft.getInstance(), payload.displayMode(), payload.url()));
-                });
-        reg.playToClient(WebviewPayloads.WebUIMainMenuPayload.TYPE, WebviewPayloads.WebUIMainMenuPayload.STREAM_CODEC,
-                (payload, ctx) -> ctx.enqueueWork(() -> WebGUIMainMenuUrl.setUrl(payload.url())));
-        reg.playToClient(WebviewPayloads.WebviewEmitS2CPayload.TYPE, WebviewPayloads.WebviewEmitS2CPayload.STREAM_CODEC,
-                (payload, ctx) -> ctx.enqueueWork(() -> WebviewClientEmit.dispatch(payload.eventName(), payload.jsonPayload())));
-        reg.playToClient(WebviewPayloads.WebviewEntityContextS2CPayload.TYPE, WebviewPayloads.WebviewEntityContextS2CPayload.STREAM_CODEC,
-                (payload, ctx) -> ctx.enqueueWork(() -> WebviewClientBridge.setEntityContext(payload.entityJson())));
+    public static void onOpenWebPayload(WebviewPayloads.OpenWebS2CPayload payload, IPayloadContext ctx) {
+        if (payload.protocolVersion() != WebviewNetworking.PROTOCOL_VERSION) return;
+        ctx.enqueueWork(() -> handleOpenPayload(Minecraft.getInstance(), payload.displayMode(), payload.url()));
+    }
+
+    public static void onEmitPayload(WebviewPayloads.WebviewEmitS2CPayload payload, IPayloadContext ctx) {
+        ctx.enqueueWork(() -> WebviewClientEmit.dispatch(payload.eventName(), payload.jsonPayload()));
+    }
+
+    public static void onEntityContextPayload(WebviewPayloads.WebviewEntityContextS2CPayload payload, IPayloadContext ctx) {
+        ctx.enqueueWork(() -> WebviewClientBridge.setEntityContext(payload.entityJson()));
     }
 
     private static void onClientTick(ClientTickEvent.Post event) {

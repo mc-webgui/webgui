@@ -48,10 +48,11 @@ public final class WebGUIMod
     //? } else {
     /*public WebGUIMod(IEventBus modBus) {
         WebviewNetworking.registerPayloadTypes(modBus);
-        // S2C payloads must be registered on BOTH sides: the server needs them to
-        // negotiate and send, the client to receive. The handlers only ever run
-        // client-side, so this is safe on a dedicated server.
-        modBus.addListener(WebGUIClient::onRegisterPayloads);
+        // S2C payloads must be registered on BOTH sides. Registration entry point
+        // lives in WebGUIPayloadRegistration (a common, non-client class) so the
+        // dedicated server never loads WebGUIClient (which imports client-only
+        // Minecraft.class). Fixes issue #9 (Screen class crash on Dedicated server).
+        modBus.addListener(WebGUIPayloadRegistration::onRegisterPayloads);
         EntityInteractionListener.register();
         WebviewCommands.register();
         WebviewJoinHud.register();
