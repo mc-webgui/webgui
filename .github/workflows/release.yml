@@ -3,6 +3,10 @@ name: Release
 on:
   push:
     branches: [main]
+  # Manual re-publish to Modrinth for the current mod_version (e.g. after fixing
+  # the token). Builds and publishes, but does NOT create a git tag / GitHub
+  # Release — those already exist for a shipped version.
+  workflow_dispatch:
 
 concurrency:
   group: release-main
@@ -27,18 +31,33 @@ jobs:
           echo "version=${modv}" >> "$GITHUB_OUTPUT"
           echo "tag=v${modv}" >> "$GITHUB_OUTPUT"
 
-      - name: Skip if tag already exists
+      # Decide what to run:
+      #   push, tag missing  -> build + publish + create GitHub Release
+      #   push, tag exists    -> skip everything (already shipped)
+      #   workflow_dispatch   -> build + publish only (re-publish to Modrinth)
+      - name: Decide actions
         id: check
         run: |
-          if git ls-remote --tags origin "refs/tags/v${{ steps.meta.outputs.version }}" | grep -q .; then
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "Tag v${{ steps.meta.outputs.version }} already exists — skipping release."
+          if git ls-remote --tags origin "refs/tags/${{ steps.meta.outputs.tag }}" | grep -q .; then
+            tag_exists=true
           else
-            echo "skip=false" >> "$GITHUB_OUTPUT"
+            tag_exists=false
+          fi
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "build=true"          >> "$GITHUB_OUTPUT"
+            echo "github_release=false" >> "$GITHUB_OUTPUT"
+            echo "Manual re-publish of ${{ steps.meta.outputs.tag }} to Modrinth."
+          elif [ "$tag_exists" = "true" ]; then
+            echo "build=false"          >> "$GITHUB_OUTPUT"
+            echo "github_release=false" >> "$GITHUB_OUTPUT"
+            echo "Tag ${{ steps.meta.outputs.tag }} already exists — skipping."
+          else
+            echo "build=true"          >> "$GITHUB_OUTPUT"
+            echo "github_release=true"  >> "$GITHUB_OUTPUT"
           fi
 
       - name: Set up Java
-        if: steps.check.outputs.skip == 'false'
+        if: steps.check.outputs.build == 'true'
         uses: actions/setup-java@v4
         with:
           java-version: '21'
@@ -46,7 +65,7 @@ jobs:
           cache: gradle
 
       - name: Build all versions
-        if: steps.check.outputs.skip == 'false'
+        if: steps.check.outputs.build == 'true'
         run: |
           chmod +x gradlew
           ./gradlew build --no-daemon
@@ -56,22 +75,22 @@ jobs:
       # Gate distribution on the full launch/server verification: nothing is
       # tagged or shipped unless the mod actually boots.
       - name: Launch test (Fabric)
-        if: steps.check.outputs.skip == 'false'
+        if: steps.check.outputs.build == 'true'
         run: ./gradlew :1.21.11-fabric:launchTest --no-daemon --stacktrace
 
       - name: Server smoke test (Fabric)
-        if: steps.check.outputs.skip == 'false'
+        if: steps.check.outputs.build == 'true'
         run: bash .github/scripts/server-smoke-test.sh :1.21.11-fabric 600
 
       - name: Server smoke test (NeoForge)
-        if: steps.check.outputs.skip == 'false'
+        if: steps.check.outputs.build == 'true'
         run: bash .github/scripts/server-smoke-test.sh :1.21.11-neoforge 600
 
       # Publish each jar as its own Modrinth version (one per MC version + loader)
       # BEFORE creating the git tag, so a failed upload doesn't leave a tag that
       # would make the whole release skip on re-run.
       - name: Publish 1.20.1 Fabric to Modrinth
-        if: steps.check.outputs.skip == 'false'
+        if: steps.check.outputs.build == 'true'
         uses: Kir-Antipov/mc-publish@v3.3
         with:
           modrinth-id: tDw1xQja
@@ -89,7 +108,7 @@ jobs:
             !versions/1.20.1-fabric/build/libs/*-sources.jar
 
       - name: Publish 1.21.1 Fabric to Modrinth
-        if: steps.check.outputs.skip == 'false'
+        if: steps.check.outputs.build == 'true'
         uses: Kir-Antipov/mc-publish@v3.3
         with:
           modrinth-id: tDw1xQja
@@ -107,7 +126,7 @@ jobs:
             !versions/1.21.1-fabric/build/libs/*-sources.jar
 
       - name: Publish 1.21.11 Fabric to Modrinth
-        if: steps.check.outputs.skip == 'false'
+        if: steps.check.outputs.build == 'true'
         uses: Kir-Antipov/mc-publish@v3.3
         with:
           modrinth-id: tDw1xQja
@@ -125,7 +144,7 @@ jobs:
             !versions/1.21.11-fabric/build/libs/*-sources.jar
 
       - name: Publish 1.21.1 NeoForge to Modrinth
-        if: steps.check.outputs.skip == 'false'
+        if: steps.check.outputs.build == 'true'
         uses: Kir-Antipov/mc-publish@v3.3
         with:
           modrinth-id: tDw1xQja
@@ -143,7 +162,7 @@ jobs:
             !versions/1.21.1-neoforge/build/libs/*-sources.jar
 
       - name: Publish 1.21.11 NeoForge to Modrinth
-        if: steps.check.outputs.skip == 'false'
+        if: steps.check.outputs.build == 'true'
         uses: Kir-Antipov/mc-publish@v3.3
         with:
           modrinth-id: tDw1xQja
@@ -160,8 +179,32 @@ jobs:
             !versions/1.21.11-neoforge/build/libs/*-dev.jar
             !versions/1.21.11-neoforge/build/libs/*-sources.jar
 
+      # mc-publish can report success without actually creating a version (e.g.
+      # a token lacking the "Create versions" scope). Confirm every version is
+      # really on Modrinth so a green run can't lie.
+      - name: Verify Modrinth versions
+        if: steps.check.outputs.build == 'true'
+        run: |
+          sleep 8
+          v='${{ steps.meta.outputs.version }}'
+          expected="${v}+mc1.20.1-fabric ${v}+mc1.21.1-fabric ${v}+mc1.21.11-fabric ${v}+mc1.21.1-neoforge ${v}+mc1.21.11-neoforge"
+          published=$(curl -s "https://api.modrinth.com/v2/project/tDw1xQja/version?cb=${{ github.run_id }}" \
+            | python3 -c "import sys,json; print('\n'.join(x['version_number'] for x in json.load(sys.stdin)))")
+          fail=0
+          for e in $expected; do
+            if printf '%s\n' "$published" | grep -qxF "$e"; then
+              echo "ok: $e"
+            else
+              echo "MISSING on Modrinth: $e"; fail=1
+            fi
+          done
+          if [ "$fail" != "0" ]; then
+            echo "::error::Modrinth publish reported success but versions are missing — check that MODRINTH_TOKEN has the 'Create versions' scope."
+            exit 1
+          fi
+
       - name: Create GitHub Release
-        if: steps.check.outputs.skip == 'false'
+        if: steps.check.outputs.github_release == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.meta.outputs.tag }}
@@ -169,4 +212,5 @@ jobs:
           files: |
             versions/*/build/libs/*.jar
             !versions/*/build/libs/*-dev.jar
+            !versions/*/build/libs/*-sources.jar
           fail_on_unmatched_files: false
