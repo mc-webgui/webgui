@@ -67,6 +67,99 @@ jobs:
         if: steps.check.outputs.skip == 'false'
         run: bash .github/scripts/server-smoke-test.sh :1.21.11-neoforge 600
 
+      # Publish each jar as its own Modrinth version (one per MC version + loader)
+      # BEFORE creating the git tag, so a failed upload doesn't leave a tag that
+      # would make the whole release skip on re-run.
+      - name: Publish 1.20.1 Fabric to Modrinth
+        if: steps.check.outputs.skip == 'false'
+        uses: Kir-Antipov/mc-publish@v3.3
+        with:
+          modrinth-id: tDw1xQja
+          modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
+          modrinth-featured: false
+          name: WebGUI ${{ steps.meta.outputs.version }} (1.20.1 Fabric)
+          version: ${{ steps.meta.outputs.version }}+mc1.20.1-fabric
+          version-type: release
+          loaders: fabric
+          game-versions: '1.20.1'
+          changelog-file: CHANGELOG.md
+          files: |
+            versions/1.20.1-fabric/build/libs/*.jar
+            !versions/1.20.1-fabric/build/libs/*-dev.jar
+            !versions/1.20.1-fabric/build/libs/*-sources.jar
+
+      - name: Publish 1.21.1 Fabric to Modrinth
+        if: steps.check.outputs.skip == 'false'
+        uses: Kir-Antipov/mc-publish@v3.3
+        with:
+          modrinth-id: tDw1xQja
+          modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
+          modrinth-featured: false
+          name: WebGUI ${{ steps.meta.outputs.version }} (1.21.1 Fabric)
+          version: ${{ steps.meta.outputs.version }}+mc1.21.1-fabric
+          version-type: release
+          loaders: fabric
+          game-versions: '1.21.1'
+          changelog-file: CHANGELOG.md
+          files: |
+            versions/1.21.1-fabric/build/libs/*.jar
+            !versions/1.21.1-fabric/build/libs/*-dev.jar
+            !versions/1.21.1-fabric/build/libs/*-sources.jar
+
+      - name: Publish 1.21.11 Fabric to Modrinth
+        if: steps.check.outputs.skip == 'false'
+        uses: Kir-Antipov/mc-publish@v3.3
+        with:
+          modrinth-id: tDw1xQja
+          modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
+          modrinth-featured: false
+          name: WebGUI ${{ steps.meta.outputs.version }} (1.21.11 Fabric)
+          version: ${{ steps.meta.outputs.version }}+mc1.21.11-fabric
+          version-type: release
+          loaders: fabric
+          game-versions: '1.21.11'
+          changelog-file: CHANGELOG.md
+          files: |
+            versions/1.21.11-fabric/build/libs/*.jar
+            !versions/1.21.11-fabric/build/libs/*-dev.jar
+            !versions/1.21.11-fabric/build/libs/*-sources.jar
+
+      - name: Publish 1.21.1 NeoForge to Modrinth
+        if: steps.check.outputs.skip == 'false'
+        uses: Kir-Antipov/mc-publish@v3.3
+        with:
+          modrinth-id: tDw1xQja
+          modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
+          modrinth-featured: false
+          name: WebGUI ${{ steps.meta.outputs.version }} (1.21.1 NeoForge)
+          version: ${{ steps.meta.outputs.version }}+mc1.21.1-neoforge
+          version-type: release
+          loaders: neoforge
+          game-versions: '1.21.1'
+          changelog-file: CHANGELOG.md
+          files: |
+            versions/1.21.1-neoforge/build/libs/*.jar
+            !versions/1.21.1-neoforge/build/libs/*-dev.jar
+            !versions/1.21.1-neoforge/build/libs/*-sources.jar
+
+      - name: Publish 1.21.11 NeoForge to Modrinth
+        if: steps.check.outputs.skip == 'false'
+        uses: Kir-Antipov/mc-publish@v3.3
+        with:
+          modrinth-id: tDw1xQja
+          modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
+          modrinth-featured: false
+          name: WebGUI ${{ steps.meta.outputs.version }} (1.21.11 NeoForge)
+          version: ${{ steps.meta.outputs.version }}+mc1.21.11-neoforge
+          version-type: release
+          loaders: neoforge
+          game-versions: '1.21.11'
+          changelog-file: CHANGELOG.md
+          files: |
+            versions/1.21.11-neoforge/build/libs/*.jar
+            !versions/1.21.11-neoforge/build/libs/*-dev.jar
+            !versions/1.21.11-neoforge/build/libs/*-sources.jar
+
       - name: Create GitHub Release
         if: steps.check.outputs.skip == 'false'
         uses: softprops/action-gh-release@v2
