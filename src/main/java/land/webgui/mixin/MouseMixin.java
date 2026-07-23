@@ -33,12 +33,17 @@ public class MouseMixin {
     @Inject(method = "onMouseButton", at = @At("HEAD"), cancellable = true)
     private void webgui$cancelVanillaForWebHudPseudoGui(long window, MouseInput input, int action, CallbackInfo ci) {
     //? } else {
-    /*@Inject(method = "onMouseButton", at = @At("HEAD"), cancellable = true)
+    /*@Inject(method = "onPress", at = @At("HEAD"), cancellable = true)
     private void webgui$cancelVanillaForWebHudPseudoGui(long window, int button, int action, int mods, CallbackInfo ci) {*/
     //? }
     //? } else {
+    //? if fabric {
     /*@Inject(method = "onMouseButton", at = @At("HEAD"), cancellable = true)
     private void webgui$cancelVanillaForWebHudPseudoGui(long window, int button, int action, int mods, CallbackInfo ci) {*/
+    //? } else {
+    /*@Inject(method = "onPress", at = @At("HEAD"), cancellable = true)
+    private void webgui$cancelVanillaForWebHudPseudoGui(long window, int button, int action, int mods, CallbackInfo ci) {*/
+    //? }
     //? }
         //? if fabric {
         MinecraftClient client = MinecraftClient.getInstance();
@@ -110,7 +115,11 @@ public class MouseMixin {
         ci.cancel();
     }
 
+    //? if fabric {
     @Inject(method = "onCursorPos", at = @At("HEAD"))
+    //? } else {
+    /*@Inject(method = "onMove", at = @At("HEAD"))*/
+    //? }
     private void webgui$moveToWebHud(long window, double x, double y, CallbackInfo ci) {
         //? if fabric {
         MinecraftClient client = MinecraftClient.getInstance();
@@ -148,7 +157,11 @@ public class MouseMixin {
         }
     }
 
+    //? if fabric {
     @Inject(method = "onMouseScroll", at = @At("HEAD"), cancellable = true)
+    //? } else {
+    /*@Inject(method = "onScroll", at = @At("HEAD"), cancellable = true)*/
+    //? }
     private void webgui$scrollToWebHudPseudoGui(long window, double horizontal, double vertical, CallbackInfo ci) {
         //? if fabric {
         MinecraftClient client = MinecraftClient.getInstance();

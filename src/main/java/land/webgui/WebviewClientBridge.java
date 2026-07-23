@@ -99,6 +99,15 @@ public final class WebviewClientBridge {
         }
     }
 
+    /**
+     * Strips the leading slash that {@link java.net.SocketAddress#toString()} prepends
+     * (e.g. {@code /127.0.0.1:25565}). Done with plain string ops on purpose: feeding the
+     * address to a regex (replaceFirst) crashes the game when it contains meta characters.
+     */
+    private static String stripLeadingSlash(String address) {
+        return address.startsWith("/") ? address.substring(1) : address;
+    }
+
     //? if fabric {
     private static JsonObject buildPayload(MinecraftClient client, ClientPlayerEntity player) {
         JsonObject o = new JsonObject();
@@ -108,11 +117,23 @@ public final class WebviewClientBridge {
         o.addProperty("webviewMode", WebSession.mode().name());
         o.addProperty("dimension",   player.getEntityWorld().getRegistryKey().getValue().toString());
 
+        o.addProperty("health",    player.getHealth());
+        o.addProperty("maxHealth", player.getMaxHealth());
+        o.addProperty("food",      player.getHungerManager().getFoodLevel());
+        o.addProperty("xpLevel",   player.experienceLevel);
+        var gameMode = client.interactionManager != null ? client.interactionManager.getCurrentGameMode() : null;
+        if (gameMode != null) o.addProperty("gamemode", gameMode.asString());
+
         JsonObject pos = new JsonObject();
         pos.addProperty("x", player.getX());
         pos.addProperty("y", player.getY());
         pos.addProperty("z", player.getZ());
         o.add("pos", pos);
+
+        JsonObject look = new JsonObject();
+        look.addProperty("yaw",   player.getYaw());
+        look.addProperty("pitch", player.getPitch());
+        o.add("look", look);
 
         JsonObject server = buildServerInfo(client);
         if (server != null) o.add("server", server);
@@ -131,7 +152,7 @@ public final class WebviewClientBridge {
         } else {
             var conn = nh.getConnection();
             if (conn != null && conn.getAddress() != null) {
-                s.addProperty("address", conn.getAddress().toString().replaceFirst("^/", ""));
+                s.addProperty("address", stripLeadingSlash(conn.getAddress().toString()));
             }
         }
         return s;
@@ -149,11 +170,23 @@ public final class WebviewClientBridge {
         o.addProperty("dimension",   player.level().dimension().location().toString());
         //? }
 
+        o.addProperty("health",    player.getHealth());
+        o.addProperty("maxHealth", player.getMaxHealth());
+        o.addProperty("food",      player.getFoodData().getFoodLevel());
+        o.addProperty("xpLevel",   player.experienceLevel);
+        var gameMode = client.gameMode != null ? client.gameMode.getPlayerMode() : null;
+        if (gameMode != null) o.addProperty("gamemode", gameMode.getName());
+
         JsonObject pos = new JsonObject();
         pos.addProperty("x", player.getX());
         pos.addProperty("y", player.getY());
         pos.addProperty("z", player.getZ());
         o.add("pos", pos);
+
+        JsonObject look = new JsonObject();
+        look.addProperty("yaw",   player.getYRot());
+        look.addProperty("pitch", player.getXRot());
+        o.add("look", look);
 
         JsonObject server = buildServerInfo(client);
         if (server != null) o.add("server", server);
@@ -172,7 +205,7 @@ public final class WebviewClientBridge {
         } else {
             var conn = nh.getConnection();
             if (conn != null && conn.getRemoteAddress() != null) {
-                s.addProperty("address", conn.getRemoteAddress().toString().replaceFirst("^/", ""));
+                s.addProperty("address", stripLeadingSlash(conn.getRemoteAddress().toString()));
             }
         }
         return s;
