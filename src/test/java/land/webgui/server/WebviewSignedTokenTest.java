@@ -83,9 +83,16 @@ class WebviewSignedTokenTest {
     @Test
     void rejectsTamperedSignature() throws Exception {
         String token = forgeToken(UUID.randomUUID(), future());
-        // Flip the last character of the signature segment.
-        char last = token.charAt(token.length() - 1);
-        String tampered = token.substring(0, token.length() - 1) + (last == 'A' ? 'B' : 'A');
+        // Flip the FIRST character of the signature segment. Flipping the last
+        // char is unreliable: the final base64 char of a 32-byte signature only
+        // carries 4 significant bits + 2 padding bits the decoder discards, so a
+        // flip there can decode to the same signature bytes (~1/16 of the time)
+        // and leave the token valid. The first char's bits are all significant.
+        int sigStart = token.indexOf('.') + 1;
+        char first = token.charAt(sigStart);
+        String tampered = token.substring(0, sigStart)
+                + (first == 'A' ? 'B' : 'A')
+                + token.substring(sigStart + 1);
         assertTrue(WebviewSignedToken.verify(tampered).isEmpty());
     }
 
