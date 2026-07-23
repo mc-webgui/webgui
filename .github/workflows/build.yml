@@ -2,9 +2,8 @@ name: Build
 
 on:
   push:
-    branches: ['**']
+    branches: [main]
   pull_request:
-    branches: ['**']
   workflow_dispatch:
 
 concurrency:
@@ -13,8 +12,20 @@ concurrency:
 
 jobs:
   build:
-    name: Build all versions
+    name: build (${{ matrix.version }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - version: 1.20.1-fabric
+          - version: 1.21.1-fabric
+          - version: 1.21.11-fabric
+            launch: fabric
+            smoke: true
+          - version: 1.21.1-neoforge
+          - version: 1.21.11-neoforge
+            smoke: true
     steps:
       - uses: actions/checkout@v4
 
@@ -27,14 +38,41 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      # NeoForge runs its launch test inside `build` (moddev unitTest); Fabric
+      # keeps it out of `build` and runs it as a separate task below.
       - name: Build
-        run: ./gradlew build --stacktrace
+        run: ./gradlew :${{ matrix.version }}:build --stacktrace
+
+      - name: Launch test (Fabric)
+        if: matrix.launch == 'fabric'
+        run: ./gradlew :${{ matrix.version }}:launchTest --stacktrace
+
+      # Boot a real headless dedicated server and assert it reaches "Done".
+      - name: Server smoke test
+        if: matrix.smoke
+        run: bash .github/scripts/server-smoke-test.sh :${{ matrix.version }} 600
 
       - name: Upload artifacts
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: build-artifacts
-          path: 'versions/**/build/libs/*.jar'
+          name: build-artifacts-${{ matrix.version }}
+          path: 'versions/${{ matrix.version }}/build/libs/*.jar'
           if-no-files-found: error
           retention-days: 30
+
+  # Single required status check for branch protection: green only if every
+  # matrix build succeeded.
+  build-all-versions:
+    name: Build all versions
+    needs: build
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify matrix result
+        run: |
+          if [ "${{ needs.build.result }}" != "success" ]; then
+            echo "One or more version builds failed: ${{ needs.build.result }}"
+            exit 1
+          fi
+          echo "All version builds passed."

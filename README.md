@@ -16,7 +16,7 @@ WebGUI is a Fabric mod that embeds a real Chromium browser (via [MCEF](https://g
 - **HUD overlay** — transparent overlay on top of the game; toggle interactive mode with `` ` ``
 - **Auto HUD on join** — automatically shows a HUD overlay when a player connects
 - **Custom main menu** — players press `F6` to open your web page
-- **Live client data** — the mod pushes `window.webgui.client` (position, dimension, server info) to the page at 20 TPS
+- **Live client data** — the mod pushes `window.webgui.client` (position, look direction, health, food, XP level, gamemode, dimension, server info) to the page at 20 TPS
 - **Signed tokens** — every URL the mod opens carries an HMAC-signed token so your backend can verify the player's identity
 - **Mod API** — other Fabric mods can open WebGUI overlays programmatically via `WebviewApi`
 

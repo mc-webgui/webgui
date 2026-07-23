@@ -47,6 +47,28 @@ public final class WebviewNetworking {
                     WebviewPayloads.WebviewPageEventC2SPayload.STREAM_CODEC,
                     (payload, ctx) -> ctx.enqueueWork(() ->
                             WebviewServerEvents.firePageEvent((net.minecraft.server.level.ServerPlayer) ctx.player(), payload.channel(), payload.jsonPayload())));
+
+            // S2C types register on both sides (the server sends them), but their
+            // handlers touch client-only classes — loading those on a dedicated
+            // server trips the RuntimeDistCleaner. So: real handlers on the client,
+            // no-op handlers on the server (S2C is never received server-side).
+            //? if >=1.21.5 {
+            boolean client = net.neoforged.fml.loading.FMLEnvironment.getDist().isClient();
+            //? } else {
+            boolean client = net.neoforged.fml.loading.FMLEnvironment.dist.isClient();
+            //? }
+            if (client) {
+                WebGUIClient.registerClientReceivers(event);
+            } else {
+                reg.playToClient(WebviewPayloads.OpenWebS2CPayload.TYPE,
+                        WebviewPayloads.OpenWebS2CPayload.STREAM_CODEC, (payload, ctx) -> {});
+                reg.playToClient(WebviewPayloads.WebUIMainMenuPayload.TYPE,
+                        WebviewPayloads.WebUIMainMenuPayload.STREAM_CODEC, (payload, ctx) -> {});
+                reg.playToClient(WebviewPayloads.WebviewEmitS2CPayload.TYPE,
+                        WebviewPayloads.WebviewEmitS2CPayload.STREAM_CODEC, (payload, ctx) -> {});
+                reg.playToClient(WebviewPayloads.WebviewEntityContextS2CPayload.TYPE,
+                        WebviewPayloads.WebviewEntityContextS2CPayload.STREAM_CODEC, (payload, ctx) -> {});
+            }
         });
     }*/
     //? }

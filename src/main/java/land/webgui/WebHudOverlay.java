@@ -263,6 +263,21 @@ public final class WebHudOverlay {
         return hudPageReady;
     }
 
+    /**
+     * Clears all HUD overlay state. Called when leaving a world (disconnect / exit to title)
+     * so a server-opened HUD does not linger on the main menu. The owning browser is closed
+     * separately via {@link WebSession#dispose()}.
+     */
+    public static void reset() {
+        hudVisible = false;
+        hudPageReady = false;
+        hudInteractive = false;
+        restoreHudAfterGuiClose = false;
+        cursorUnlockedForWebHud = false;
+        lastPixelW = -1;
+        lastPixelH = -1;
+    }
+
     //? if fabric {
     public static void onGuiOpened() {
     //? } else {
