@@ -10,20 +10,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Launch smoke test: boots Minecraft + the mod loader in-process and asserts the
- * WebGUI mod is present and its entrypoint class is loadable — i.e. "Minecraft
- * starts with the mod".
+ * WebGUI mod loads and its entrypoint class is reachable. Loader APIs are called
+ * by reflection so the one source compiles under both Fabric and NeoForge.
  *
- * <p>Works on both loaders:
- * <ul>
- *   <li><b>Fabric</b> — via {@code fabric-loader-junit}; runs in the separate
- *       {@code launchTest} task (that runtime auto-boots the loader).</li>
- *   <li><b>NeoForge</b> — via moddev's {@code unitTest}, which boots FML as a
- *       client and constructs the {@code @Mod}; runs in the standard
- *       {@code test} task.</li>
- * </ul>
- *
- * <p>The loader APIs are reached by reflection so the shared test source compiles
- * for both loaders regardless of which loader's classes are on the classpath.
+ * <p>Fabric runs it via {@code fabric-loader-junit} in the {@code launchTest}
+ * task; NeoForge via moddev's {@code unitTest} in the standard {@code test} task.
  */
 @Tag("launch")
 class WebGUIModLaunchTest {

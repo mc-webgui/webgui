@@ -47,10 +47,8 @@ public final class WebGUIMod
     }
     //? } else {
     /*public WebGUIMod(IEventBus modBus) {
-        // Registers all payload types (C2S + S2C). S2C client receive-handlers are
-        // attached client-side only, inside registerPayloadTypes — see the note
-        // there. Referencing WebGUIClient from here would load a client-only class
-        // on dedicated servers and crash the RuntimeDistCleaner.
+        // Registers C2S + S2C types; S2C receive-handlers are wired client-side
+        // only inside registerPayloadTypes (see the note there).
         WebviewNetworking.registerPayloadTypes(modBus);
         EntityInteractionListener.register();
         WebviewCommands.register();

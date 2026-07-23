@@ -12,19 +12,13 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Validates that the mod is correctly declared for the loader that is active for
- * this Stonecutter build — Fabric ({@code fabric.mod.json}) or NeoForge
- * ({@code META-INF/neoforge.mods.toml}). A broken/missing declaration is the
- * most common reason a mod silently fails to load, so this guards both loaders
- * without booting the game (runs in the standard {@code test} task, which is why
- * it also covers NeoForge — where the launch test can't run).
+ * Checks the mod is correctly declared for the active Stonecutter loader —
+ * {@code fabric.mod.json} or {@code neoforge.mods.toml} — without booting the
+ * game (so it also covers NeoForge, where the launch test can't run).
  *
- * <p>Many mods on the test classpath ship a file at the same path (every
- * fabric-api module has a {@code fabric.mod.json}), so we enumerate <em>all</em>
- * matching resources and pick the one that is actually ours. If ours isn't
- * exposed on the dev/test classpath (Fabric's loom strips it so the test JVM
- * isn't detected as a mod), the loader assertions are skipped — the Fabric
- * launch test already verifies the loader parses it.
+ * <p>Many classpath jars ship a file at the same path, so we scan all matching
+ * resources for ours; if loom strips ours from the test classpath, the checks
+ * are skipped (the Fabric launch test already exercises loader parsing).
  */
 class WebGUIModMetadataTest {
 

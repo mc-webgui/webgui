@@ -48,14 +48,10 @@ public final class WebviewNetworking {
                     (payload, ctx) -> ctx.enqueueWork(() ->
                             WebviewServerEvents.firePageEvent((net.minecraft.server.level.ServerPlayer) ctx.player(), payload.channel(), payload.jsonPayload())));
 
-            // S2C payloads must be registered on BOTH sides — the server needs the
-            // types registered to send them. But their receive handlers reference
-            // client-only classes (Minecraft, screens), so we must NOT let those
-            // load on a dedicated server: touching WebGUIClient there trips the
-            // RuntimeDistCleaner ("invalid dist DEDICATED_SERVER") and crashes mod
-            // loading. Register the real handlers only on the client; on the server
-            // register the same types with no-op handlers (S2C is never received
-            // server-side, so they never run).
+            // S2C types register on both sides (the server sends them), but their
+            // handlers touch client-only classes — loading those on a dedicated
+            // server trips the RuntimeDistCleaner. So: real handlers on the client,
+            // no-op handlers on the server (S2C is never received server-side).
             //? if >=1.21.5 {
             boolean client = net.neoforged.fml.loading.FMLEnvironment.getDist().isClient();
             //? } else {
