@@ -53,6 +53,20 @@ jobs:
         env:
           GRADLE_OPTS: -Xmx2g
 
+      # Gate distribution on the full launch/server verification: nothing is
+      # tagged or shipped unless the mod actually boots.
+      - name: Launch test (Fabric)
+        if: steps.check.outputs.skip == 'false'
+        run: ./gradlew :1.21.11-fabric:launchTest --no-daemon --stacktrace
+
+      - name: Server smoke test (Fabric)
+        if: steps.check.outputs.skip == 'false'
+        run: bash .github/scripts/server-smoke-test.sh :1.21.11-fabric 600
+
+      - name: Server smoke test (NeoForge)
+        if: steps.check.outputs.skip == 'false'
+        run: bash .github/scripts/server-smoke-test.sh :1.21.11-neoforge 600
+
       - name: Create GitHub Release
         if: steps.check.outputs.skip == 'false'
         uses: softprops/action-gh-release@v2

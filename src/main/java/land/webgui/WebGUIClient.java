@@ -144,7 +144,9 @@ public final class WebGUIClient
         WebGUIMainMenuUrl.setUrl("");
     }
 
-    static void onRegisterPayloads(RegisterPayloadHandlersEvent event) {
+    // Called only on the client (from WebviewNetworking.registerPayloadTypes) so
+    // these client-only handlers never load on a dedicated server.
+    public static void registerClientReceivers(RegisterPayloadHandlersEvent event) {
         final var reg = event.registrar("1");
         reg.playToClient(WebviewPayloads.OpenWebS2CPayload.TYPE, WebviewPayloads.OpenWebS2CPayload.STREAM_CODEC,
                 (payload, ctx) -> {
