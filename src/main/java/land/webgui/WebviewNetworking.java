@@ -47,6 +47,32 @@ public final class WebviewNetworking {
                     WebviewPayloads.WebviewPageEventC2SPayload.STREAM_CODEC,
                     (payload, ctx) -> ctx.enqueueWork(() ->
                             WebviewServerEvents.firePageEvent((net.minecraft.server.level.ServerPlayer) ctx.player(), payload.channel(), payload.jsonPayload())));
+
+            // S2C payloads must be registered on BOTH sides — the server needs the
+            // types registered to send them. But their receive handlers reference
+            // client-only classes (Minecraft, screens), so we must NOT let those
+            // load on a dedicated server: touching WebGUIClient there trips the
+            // RuntimeDistCleaner ("invalid dist DEDICATED_SERVER") and crashes mod
+            // loading. Register the real handlers only on the client; on the server
+            // register the same types with no-op handlers (S2C is never received
+            // server-side, so they never run).
+            //? if >=1.21.5 {
+            boolean client = net.neoforged.fml.loading.FMLEnvironment.getDist().isClient();
+            //? } else {
+            boolean client = net.neoforged.fml.loading.FMLEnvironment.dist.isClient();
+            //? }
+            if (client) {
+                WebGUIClient.registerClientReceivers(event);
+            } else {
+                reg.playToClient(WebviewPayloads.OpenWebS2CPayload.TYPE,
+                        WebviewPayloads.OpenWebS2CPayload.STREAM_CODEC, (payload, ctx) -> {});
+                reg.playToClient(WebviewPayloads.WebUIMainMenuPayload.TYPE,
+                        WebviewPayloads.WebUIMainMenuPayload.STREAM_CODEC, (payload, ctx) -> {});
+                reg.playToClient(WebviewPayloads.WebviewEmitS2CPayload.TYPE,
+                        WebviewPayloads.WebviewEmitS2CPayload.STREAM_CODEC, (payload, ctx) -> {});
+                reg.playToClient(WebviewPayloads.WebviewEntityContextS2CPayload.TYPE,
+                        WebviewPayloads.WebviewEntityContextS2CPayload.STREAM_CODEC, (payload, ctx) -> {});
+            }
         });
     }*/
     //? }

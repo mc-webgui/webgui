@@ -65,9 +65,73 @@ if (sc_loader == "fabric") {
 } else {
     neoForge {
         version = project.neoforge_version
+        // Register the mod so moddev's JUnit runtime can load it during tests.
+        mods {
+            webgui {
+                sourceSet sourceSets.main
+            }
+        }
+        // Boots FML + constructs the mod inside the `test` task (NeoForge's
+        // equivalent of fabric-loader-junit), so the launch test runs here.
+        unitTest {
+            enable()
+            testedMod = mods.webgui
+        }
+        // Dev run configs (parity with loom's runClient/runServer on Fabric).
+        runs {
+            client {
+                client()
+            }
+            server {
+                server()
+            }
+        }
     }
     dependencies {
         implementation "maven.modrinth:mcef-keksuccino:${mcef_version}"
+    }
+}
+
+// --- Testing ---
+dependencies {
+    testImplementation platform("org.junit:junit-bom:5.10.2")
+    testImplementation "org.junit.jupiter:junit-jupiter"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+    if (sc_loader == "fabric") {
+        // Bootstraps Minecraft + the Fabric loader inside JUnit so the launch
+        // smoke test (@Tag("launch")) can assert the mod actually loads.
+        // Runtime-only: it never affects compilation of the shared test sources.
+        testRuntimeOnly "net.fabricmc:fabric-loader-junit:${loader_version}"
+    }
+}
+
+test {
+    useJUnitPlatform {
+        if (sc_loader == "fabric") {
+            // Fabric runs the launch test in the separate `launchTest` task so
+            // the default `build` stays fast and doesn't need game assets.
+            excludeTags 'launch'
+        }
+        // NeoForge: moddev's unitTest boots FML in this task, so the launch test
+        // runs here; the 'loader'-tagged config tests also work under that boot.
+    }
+    testLogging {
+        events 'passed', 'skipped', 'failed'
+    }
+}
+
+// Boots Minecraft with the mod and asserts it loads. CI runs this on Fabric:
+//   ./gradlew launchTest
+tasks.register('launchTest', Test) {
+    group       = 'verification'
+    description = 'Boots Minecraft with the mod (fabric-loader-junit) and asserts it loads.'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath       = sourceSets.test.runtimeClasspath
+    useJUnitPlatform {
+        includeTags 'launch'
+    }
+    testLogging {
+        events 'passed', 'skipped', 'failed'
     }
 }
 

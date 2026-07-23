@@ -30,6 +30,20 @@ jobs:
       - name: Build
         run: ./gradlew build --stacktrace
 
+      # Boots Minecraft with the mod (fabric-loader-junit) and asserts it loads.
+      # Kept separate from `build` so releases never depend on game assets.
+      - name: Launch test (Fabric)
+        run: ./gradlew :1.21.11-fabric:launchTest --stacktrace
+
+      # Smoke test: boot a REAL dedicated server (headless) and assert it reaches
+      # "Done" with the mod initialized. Guards that the mod actually loads on a
+      # dedicated server on both loaders.
+      - name: Server smoke test (Fabric)
+        run: bash .github/scripts/server-smoke-test.sh :1.21.11-fabric 600
+
+      - name: Server smoke test (NeoForge)
+        run: bash .github/scripts/server-smoke-test.sh :1.21.11-neoforge 600
+
       - name: Upload artifacts
         if: success()
         uses: actions/upload-artifact@v4
