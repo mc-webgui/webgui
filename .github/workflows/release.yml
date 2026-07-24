@@ -102,10 +102,7 @@ jobs:
           loaders: fabric
           game-versions: '1.20.1'
           changelog-file: CHANGELOG.md
-          files: |
-            versions/1.20.1-fabric/build/libs/*.jar
-            !versions/1.20.1-fabric/build/libs/*-dev.jar
-            !versions/1.20.1-fabric/build/libs/*-sources.jar
+          files: versions/1.20.1-fabric/build/libs/!(*-@(dev|sources|javadoc)).jar
 
       - name: Publish 1.21.1 Fabric to Modrinth
         if: steps.check.outputs.build == 'true'
@@ -120,10 +117,7 @@ jobs:
           loaders: fabric
           game-versions: '1.21.1'
           changelog-file: CHANGELOG.md
-          files: |
-            versions/1.21.1-fabric/build/libs/*.jar
-            !versions/1.21.1-fabric/build/libs/*-dev.jar
-            !versions/1.21.1-fabric/build/libs/*-sources.jar
+          files: versions/1.21.1-fabric/build/libs/!(*-@(dev|sources|javadoc)).jar
 
       - name: Publish 1.21.11 Fabric to Modrinth
         if: steps.check.outputs.build == 'true'
@@ -138,10 +132,7 @@ jobs:
           loaders: fabric
           game-versions: '1.21.11'
           changelog-file: CHANGELOG.md
-          files: |
-            versions/1.21.11-fabric/build/libs/*.jar
-            !versions/1.21.11-fabric/build/libs/*-dev.jar
-            !versions/1.21.11-fabric/build/libs/*-sources.jar
+          files: versions/1.21.11-fabric/build/libs/!(*-@(dev|sources|javadoc)).jar
 
       - name: Publish 1.21.1 NeoForge to Modrinth
         if: steps.check.outputs.build == 'true'
@@ -156,10 +147,7 @@ jobs:
           loaders: neoforge
           game-versions: '1.21.1'
           changelog-file: CHANGELOG.md
-          files: |
-            versions/1.21.1-neoforge/build/libs/*.jar
-            !versions/1.21.1-neoforge/build/libs/*-dev.jar
-            !versions/1.21.1-neoforge/build/libs/*-sources.jar
+          files: versions/1.21.1-neoforge/build/libs/!(*-@(dev|sources|javadoc)).jar
 
       - name: Publish 1.21.11 NeoForge to Modrinth
         if: steps.check.outputs.build == 'true'
@@ -174,10 +162,7 @@ jobs:
           loaders: neoforge
           game-versions: '1.21.11'
           changelog-file: CHANGELOG.md
-          files: |
-            versions/1.21.11-neoforge/build/libs/*.jar
-            !versions/1.21.11-neoforge/build/libs/*-dev.jar
-            !versions/1.21.11-neoforge/build/libs/*-sources.jar
+          files: versions/1.21.11-neoforge/build/libs/!(*-@(dev|sources|javadoc)).jar
 
       # mc-publish can report success without actually creating a version (e.g.
       # a token lacking the "Create versions" scope). Confirm every version is
