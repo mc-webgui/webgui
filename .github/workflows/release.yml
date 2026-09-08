@@ -70,27 +70,15 @@ jobs:
           distribution: temurin
           cache: gradle
 
-      # Stable targets gate the release; a beta build failure must never block them.
-      - name: Build stable versions
+      # Every target gates the release — Minecraft 26 is a stable line now, so
+      # a 26.x build failure must stop the release like any other.
+      - name: Build all versions
         if: steps.check.outputs.release == 'true'
         run: |
           chmod +x gradlew
           ./gradlew :1.20.1-fabric:build :1.21.1-fabric:build :1.21.11-fabric:build \
-                    :1.21.1-neoforge:build :1.21.11-neoforge:build --no-daemon
-        env:
-          GRADLE_OPTS: -Xmx2g
-
-      - name: Build 26.2 NeoForge (beta)
-        if: steps.check.outputs.release == 'true'
-        continue-on-error: true
-        run: ./gradlew :26.2-neoforge:build --no-daemon
-        env:
-          GRADLE_OPTS: -Xmx2g
-
-      - name: Build 26.1.2 NeoForge (beta)
-        if: steps.check.outputs.release == 'true'
-        continue-on-error: true
-        run: ./gradlew :26.1.2-neoforge:build --no-daemon
+                    :1.21.1-neoforge:build :1.21.11-neoforge:build \
+                    :26.1.2-neoforge:build :26.2-neoforge:build --no-daemon
         env:
           GRADLE_OPTS: -Xmx2g
 
@@ -186,36 +174,31 @@ jobs:
           changelog: ${{ steps.notes.outputs.body }}
           files: versions/1.21.11-neoforge/build/libs/!(*-@(dev|sources|javadoc)).jar
 
-      # Beta target (Minecraft 26). Kept out of the verify gate below and allowed
-      # to fail (e.g. Modrinth may not list the game version yet) without blocking
-      # the stable release.
-      - name: Publish 26.2 NeoForge to Modrinth (beta)
+      - name: Publish 26.2 NeoForge to Modrinth
         if: steps.check.outputs.release == 'true'
-        continue-on-error: true
         uses: Kir-Antipov/mc-publish@v3.3
         with:
           modrinth-id: tDw1xQja
           modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
           modrinth-featured: false
-          name: WebGUI ${{ steps.meta.outputs.version }} (26.2 NeoForge, beta)
+          name: WebGUI ${{ steps.meta.outputs.version }} (26.2 NeoForge)
           version: ${{ steps.meta.outputs.version }}+mc26.2-neoforge
-          version-type: beta
+          version-type: release
           loaders: neoforge
           game-versions: '26.2'
           changelog: ${{ steps.notes.outputs.body }}
           files: versions/26.2-neoforge/build/libs/!(*-@(dev|sources|javadoc)).jar
 
-      - name: Publish 26.1.2 NeoForge to Modrinth (beta)
+      - name: Publish 26.1.2 NeoForge to Modrinth
         if: steps.check.outputs.release == 'true'
-        continue-on-error: true
         uses: Kir-Antipov/mc-publish@v3.3
         with:
           modrinth-id: tDw1xQja
           modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
           modrinth-featured: false
-          name: WebGUI ${{ steps.meta.outputs.version }} (26.1.2 NeoForge, beta)
+          name: WebGUI ${{ steps.meta.outputs.version }} (26.1.2 NeoForge)
           version: ${{ steps.meta.outputs.version }}+mc26.1.2-neoforge
-          version-type: beta
+          version-type: release
           loaders: neoforge
           game-versions: '26.1.2'
           changelog: ${{ steps.notes.outputs.body }}
@@ -299,31 +282,31 @@ jobs:
           changelog: ${{ steps.notes.outputs.body }}
           files: versions/1.21.11-neoforge/build/libs/!(*-@(dev|sources|javadoc)).jar
 
-      - name: Publish 26.2 NeoForge to CurseForge (beta)
+      - name: Publish 26.2 NeoForge to CurseForge
         if: steps.check.outputs.release == 'true' && vars.CURSEFORGE_ID != ''
         continue-on-error: true
         uses: Kir-Antipov/mc-publish@v3.3
         with:
           curseforge-id: ${{ vars.CURSEFORGE_ID }}
           curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
-          name: WebGUI ${{ steps.meta.outputs.version }} (26.2 NeoForge, beta)
+          name: WebGUI ${{ steps.meta.outputs.version }} (26.2 NeoForge)
           version: ${{ steps.meta.outputs.version }}+mc26.2-neoforge
-          version-type: beta
+          version-type: release
           loaders: neoforge
           game-versions: '26.2'
           changelog: ${{ steps.notes.outputs.body }}
           files: versions/26.2-neoforge/build/libs/!(*-@(dev|sources|javadoc)).jar
 
-      - name: Publish 26.1.2 NeoForge to CurseForge (beta)
+      - name: Publish 26.1.2 NeoForge to CurseForge
         if: steps.check.outputs.release == 'true' && vars.CURSEFORGE_ID != ''
         continue-on-error: true
         uses: Kir-Antipov/mc-publish@v3.3
         with:
           curseforge-id: ${{ vars.CURSEFORGE_ID }}
           curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
-          name: WebGUI ${{ steps.meta.outputs.version }} (26.1.2 NeoForge, beta)
+          name: WebGUI ${{ steps.meta.outputs.version }} (26.1.2 NeoForge)
           version: ${{ steps.meta.outputs.version }}+mc26.1.2-neoforge
-          version-type: beta
+          version-type: release
           loaders: neoforge
           game-versions: '26.1.2'
           changelog: ${{ steps.notes.outputs.body }}
@@ -337,7 +320,7 @@ jobs:
         run: |
           sleep 8
           v='${{ steps.meta.outputs.version }}'
-          expected="${v}+mc1.20.1-fabric ${v}+mc1.21.1-fabric ${v}+mc1.21.11-fabric ${v}+mc1.21.1-neoforge ${v}+mc1.21.11-neoforge"
+          expected="${v}+mc1.20.1-fabric ${v}+mc1.21.1-fabric ${v}+mc1.21.11-fabric ${v}+mc1.21.1-neoforge ${v}+mc1.21.11-neoforge ${v}+mc26.1.2-neoforge ${v}+mc26.2-neoforge"
           published=$(curl -s "https://api.modrinth.com/v2/project/tDw1xQja/version?cb=${{ github.run_id }}" \
             | python3 -c "import sys,json; print('\n'.join(x['version_number'] for x in json.load(sys.stdin)))")
           fail=0

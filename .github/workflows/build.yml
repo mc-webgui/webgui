@@ -14,8 +14,6 @@ jobs:
   build:
     name: build (${{ matrix.version }})
     runs-on: ubuntu-latest
-    # Beta targets (Minecraft 26) build in CI but don't gate the required check.
-    continue-on-error: ${{ matrix.beta || false }}
     strategy:
       fail-fast: false
       matrix:
@@ -30,10 +28,8 @@ jobs:
             smoke: true
           - version: 26.2-neoforge
             java: '25'
-            beta: true
           - version: 26.1.2-neoforge
             java: '25'
-            beta: true
     steps:
       - uses: actions/checkout@v4
 
