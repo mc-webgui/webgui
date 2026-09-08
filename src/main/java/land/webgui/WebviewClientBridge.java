@@ -1,7 +1,7 @@
 package land.webgui;
 
-import com.cinemamod.mcef.MCEF;
-import com.cinemamod.mcef.MCEFBrowser;
+import de.keksuccino.rinku.Rinku;
+import de.keksuccino.rinku.RinkuBrowser;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 //? if fabric {
@@ -54,11 +54,11 @@ public final class WebviewClientBridge {
     /*private static void tryPush(Minecraft client, boolean requireTexture, boolean ignoreDedup) {
         LocalPlayer player = client.player;*/
     //? }
-        if (!MCEF.isInitialized()) return;
+        if (!Rinku.isInitialized()) return;
         if (player == null) return;
 
-        MCEFBrowser main = WebSession.browser();
-        MCEFBrowser hud  = WebSession.hudBrowser();
+        RinkuBrowser main = WebSession.browser();
+        RinkuBrowser hud  = WebSession.hudBrowser();
         //? if fabric {
         boolean hasMain = main != null && (!requireTexture || main.isTextureReady());
         //? } else {
@@ -90,7 +90,7 @@ public final class WebviewClientBridge {
         if (hasHud)  executeJs(hud,  js);
     }
 
-    private static void executeJs(MCEFBrowser browser, String js) {
+    private static void executeJs(RinkuBrowser browser, String js) {
         try {
             String url = browser.getURL();
             browser.executeJavaScript(js, url != null ? url : "", 0);

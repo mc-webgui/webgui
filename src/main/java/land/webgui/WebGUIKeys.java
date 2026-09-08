@@ -1,6 +1,6 @@
 package land.webgui;
 
-import com.cinemamod.mcef.MCEF;
+import de.keksuccino.rinku.Rinku;
 //? if fabric {
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.MinecraftClient;
@@ -117,7 +117,7 @@ public final class WebGUIKeys {
         if (client.currentScreen instanceof WebViewScreen) {
             return;
         }
-        if (!MCEF.isInitialized()) {
+        if (!Rinku.isInitialized()) {
             if (client.player != null) {
                 client.player.sendMessage(Text.translatable("message.webgui.mcef_not_ready"), false);
             }
@@ -134,7 +134,7 @@ public final class WebGUIKeys {
         //? }
             return;
         }
-        if (!MCEF.isInitialized()) {
+        if (!Rinku.isInitialized()) {
             if (client.player != null) {
                 //? if >=26 {
                 client.player.sendSystemMessage(Component.translatable("message.webgui.mcef_not_ready"));

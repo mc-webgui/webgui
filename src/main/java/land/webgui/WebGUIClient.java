@@ -1,6 +1,6 @@
 package land.webgui;
 
-import com.cinemamod.mcef.MCEF;
+import de.keksuccino.rinku.Rinku;
 //? if fabric {
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -24,12 +24,12 @@ public final class WebGUIClient
     //? if fabric {
     @Override
     public void onInitializeClient() {
-        MCEF.scheduleForInit(success -> {
+        Rinku.scheduleForInit(success -> {
             if (!success) {
-                WebGUIMod.LOGGER.error("MCEF (Chromium) failed to initialize — web GUI will not work.");
+                WebGUIMod.LOGGER.error("Rinku (Chromium) failed to initialize — web GUI will not work.");
                 return;
             }
-            MCEF.getClient().addDisplayHandler(new WebviewBrowserConsoleLogger());
+            Rinku.getClient().addDisplayHandler(new WebviewBrowserConsoleLogger());
             WebviewPageToClientBridge.register();
             WebviewPageLoadHooks.register();
             WebGUIMod.LOGGER.info("WebGUI bridge ready (console log, page↔game, client data).");
@@ -108,7 +108,7 @@ public final class WebGUIClient
     }
 
     private static void handleOpenPayload(net.minecraft.client.MinecraftClient client, int mode, String url) {
-        if (!MCEF.isInitialized()) {
+        if (!Rinku.isInitialized()) {
             if (client.player != null) {
                 client.player.sendMessage(net.minecraft.text.Text.translatable("message.webgui.mcef_not_ready"), false);
             }
@@ -123,12 +123,12 @@ public final class WebGUIClient
     }
     //? } else {
     /*public static void initClient(IEventBus modBus) {
-        MCEF.scheduleForInit(success -> {
+        Rinku.scheduleForInit(success -> {
             if (!success) {
-                WebGUIMod.LOGGER.error("MCEF (Chromium) failed to initialize - web GUI will not work.");
+                WebGUIMod.LOGGER.error("Rinku (Chromium) failed to initialize - web GUI will not work.");
                 return;
             }
-            MCEF.getClient().addDisplayHandler(new WebviewBrowserConsoleLogger());
+            Rinku.getClient().addDisplayHandler(new WebviewBrowserConsoleLogger());
             WebviewPageToClientBridge.register();
             WebviewPageLoadHooks.register();
             WebGUIMod.LOGGER.info("WebGUI bridge ready (console log, page<->game, client data).");
@@ -182,7 +182,7 @@ public final class WebGUIClient
     }
 
     private static void handleOpenPayload(Minecraft client, int mode, String url) {
-        if (!MCEF.isInitialized()) {
+        if (!Rinku.isInitialized()) {
             if (client.player != null) {
                 //? if >=26 {
                 client.player.sendSystemMessage(

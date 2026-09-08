@@ -1,11 +1,11 @@
 package land.webgui;
 
-import com.cinemamod.mcef.MCEF;
-import com.cinemamod.mcef.MCEFBrowser;
+import de.keksuccino.rinku.Rinku;
+import de.keksuccino.rinku.RinkuBrowser;
 
 public final class WebSession {
-    private static MCEFBrowser browser;
-    private static MCEFBrowser suspendedHudBrowser;
+    private static RinkuBrowser browser;
+    private static RinkuBrowser suspendedHudBrowser;
     private static Mode mode = Mode.NONE;
 
     public enum Mode {
@@ -16,11 +16,11 @@ public final class WebSession {
 
     private WebSession() {}
 
-    public static MCEFBrowser browser() {
+    public static RinkuBrowser browser() {
         return browser;
     }
 
-    public static MCEFBrowser hudBrowser() {
+    public static RinkuBrowser hudBrowser() {
         if (mode == Mode.HUD_OVERLAY) {
             return browser;
         }
@@ -70,7 +70,7 @@ public final class WebSession {
         WebviewClientBridge.clearCache();
     }
 
-    public static MCEFBrowser openForGui(String url) {
+    public static RinkuBrowser openForGui(String url) {
         closeSuspendedHudBrowser();
         if (mode == Mode.HUD_OVERLAY && browser != null) {
             suspendedHudBrowser = browser;
@@ -78,13 +78,13 @@ public final class WebSession {
         } else {
             closeActiveBrowser();
         }
-        browser = MCEF.createBrowser(url, true);
+        browser = Rinku.createBrowser(url, true);
         mode = Mode.GUI_SCREEN;
         WebviewClientBridge.clearCache();
         return browser;
     }
 
-    public static MCEFBrowser openForHud(String url) {
+    public static RinkuBrowser openForHud(String url) {
         closeSuspendedHudBrowser();
         if (mode == Mode.HUD_OVERLAY && browser != null) {
             browser.loadURL(url);
@@ -92,7 +92,7 @@ public final class WebSession {
             return browser;
         }
         closeActiveBrowser();
-        browser = MCEF.createBrowser(url, true);
+        browser = Rinku.createBrowser(url, true);
         mode = Mode.HUD_OVERLAY;
         WebviewClientBridge.clearCache();
         return browser;

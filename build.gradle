@@ -60,10 +60,7 @@ if (sc_loader == "fabric") {
         mappings  "net.fabricmc:yarn:${yarn_mappings}:v2"
         modImplementation "net.fabricmc:fabric-loader:${loader_version}"
         modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
-        // MCEF [Keksuccino's Fork] was renamed to Rinku; the old `mcef-keksuccino`
-        // slug no longer resolves on Modrinth's maven. The 2.2.x artifacts are
-        // still served under the new slug, so only the artifact id changes here.
-        include(modImplementation("maven.modrinth:rinku:${mcef_version}"))
+        include(modImplementation("maven.modrinth:rinku:${rinku_version}"))
     }
 } else {
     neoForge {
@@ -90,8 +87,52 @@ if (sc_loader == "fabric") {
             }
         }
     }
+    // Rinku ships its NeoForge builds inconsistently: 26.2 has classes at the
+    // top level, but 1.21.1 and 26.1.2 are jarJar wrappers whose real mod sits
+    // in META-INF/jarjar/. NeoForge unpacks that at runtime, so the game is
+    // happy either way — javac is not, and sees an empty jar. Compile against
+    // whatever actually holds the classes; the published artifact stays on the
+    // runtime classpath untouched.
+    configurations {
+        rinkuArtifact
+    }
+
     dependencies {
-        implementation "maven.modrinth:rinku:${mcef_version}"
+        rinkuArtifact "maven.modrinth:rinku:${rinku_version}"
+        runtimeOnly   "maven.modrinth:rinku:${rinku_version}"
+    }
+
+    def rinkuClassesDir = layout.buildDirectory.dir('rinku-compile')
+    def unwrapRinku = tasks.register('unwrapRinku') {
+        def artifact = configurations.rinkuArtifact
+        inputs.files(artifact)
+        outputs.dir(rinkuClassesDir)
+        doLast {
+            def dir = rinkuClassesDir.get().asFile
+            dir.deleteDir()
+            dir.mkdirs()
+            def outer = artifact.singleFile
+            def target = new File(dir, 'rinku.jar')
+            new java.util.zip.ZipFile(outer).withCloseable { zip ->
+                def nested = zip.entries().toList().find {
+                    it.name.startsWith('META-INF/jarjar/') && it.name.endsWith('.jar')
+                }
+                if (nested != null) {
+                    target.withOutputStream { out -> out << zip.getInputStream(nested) }
+                    logger.lifecycle("rinku: compiling against nested ${nested.name}")
+                } else {
+                    target.bytes = outer.bytes
+                }
+            }
+        }
+    }
+
+    dependencies {
+        // Point at the jar itself, not the directory holding it — a directory
+        // on the compile classpath is searched for loose .class files only.
+        compileOnly files(rinkuClassesDir.map { it.file('rinku.jar') }) {
+            builtBy unwrapRinku
+        }
     }
 }
 

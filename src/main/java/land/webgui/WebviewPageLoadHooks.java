@@ -1,7 +1,7 @@
 package land.webgui;
 
-import com.cinemamod.mcef.MCEF;
-import com.cinemamod.mcef.MCEFBrowser;
+import de.keksuccino.rinku.Rinku;
+import de.keksuccino.rinku.RinkuBrowser;
 //? if fabric {
 import net.minecraft.client.MinecraftClient;
 //? } else {
@@ -16,12 +16,12 @@ public final class WebviewPageLoadHooks {
     private WebviewPageLoadHooks() {}
 
     public static void register() {
-        MCEF.getClient().addLoadHandler(new CefLoadHandlerAdapter() {
+        Rinku.getClient().addLoadHandler(new CefLoadHandlerAdapter() {
 
             @Override
             public void onLoadStart(CefBrowser browser, CefFrame frame,
                                     org.cef.network.CefRequest.TransitionType transitionType) {
-                MCEFBrowser active = WebSession.browser();
+                RinkuBrowser active = WebSession.browser();
                 if (active == null || browser != active) return;
                 if (WebSession.mode() == WebSession.Mode.HUD_OVERLAY) {
                     WebHudOverlay.onHudBrowserLoadStart(active);
@@ -32,7 +32,7 @@ public final class WebviewPageLoadHooks {
 
             @Override
             public void onLoadEnd(CefBrowser browser, CefFrame frame, int httpStatusCode) {
-                MCEFBrowser active = WebSession.browser();
+                RinkuBrowser active = WebSession.browser();
                 if (active == null || browser != active) return;
 
                 injectBridgeScript(active);
@@ -57,7 +57,7 @@ public final class WebviewPageLoadHooks {
             public void onLoadError(CefBrowser browser, CefFrame frame,
                                     CefLoadHandler.ErrorCode errorCode,
                                     String errorText, String failedUrl) {
-                MCEFBrowser active = WebSession.browser();
+                RinkuBrowser active = WebSession.browser();
                 if (active == null || browser != active) return;
                 if (WebSession.mode() == WebSession.Mode.HUD_OVERLAY) {
                     WebHudOverlay.onHudBrowserLoadFinished(active);
@@ -68,7 +68,7 @@ public final class WebviewPageLoadHooks {
         });
     }
 
-    private static void injectBridgeScript(MCEFBrowser browser) {
+    private static void injectBridgeScript(RinkuBrowser browser) {
         try {
             String url = browser.getURL();
             browser.executeJavaScript(WebviewScriptInject.bridgeSetup(), url != null ? url : "", 0);
