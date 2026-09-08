@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-@Mixin(targets = "com.cinemamod.mcef.CefUtil", remap = false)
+@Mixin(targets = "de.keksuccino.rinku.util.CefUtil", remap = false)
 public class CefUtilMixin {
 
     @ModifyArg(
@@ -25,8 +25,6 @@ public class CefUtilMixin {
         args.add("--enable-gpu-rasterization");
         // Out-of-process rasterization: separate GPU process handles raster work
         args.add("--enable-oop-rasterization");
-        // Prefer native desktop OpenGL over ANGLE (better performance on desktop)
-        args.add("--use-gl=desktop");
         // Remove GPU vsync so CEF isn't throttled by display refresh during off-screen render
         args.add("--disable-gpu-vsync");
         return args.toArray(new String[0]);

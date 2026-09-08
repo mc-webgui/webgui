@@ -1,13 +1,13 @@
 package land.webgui;
 
-import com.cinemamod.mcef.MCEFBrowser;
+import de.keksuccino.rinku.RinkuBrowser;
 import org.lwjgl.glfw.GLFW;
 
 /**
  * Sizing/scale helpers for the embedded browser. The browser view is the physical framebuffer size
  * (so its texture draws 1:1 → crisp on HiDPI), and CEF page zoom scales the content up by the OS
  * content scale so the page's CSS viewport stays logical and independent of Minecraft's GUI Scale.
- * Uses only the public {@link MCEFBrowser#setZoomLevel} API — no device_scale_factor, no reflection.
+ * Uses only the public {@link RinkuBrowser#setZoomLevel} API — no device_scale_factor, no reflection.
  */
 final class WebViewLayout {
     private WebViewLayout() {}
@@ -40,7 +40,7 @@ final class WebViewLayout {
     }
 
     /** Applies the content-scale zoom. CEF may reset zoom on navigation, so call after load too. */
-    static void applyZoom(MCEFBrowser browser) {
+    static void applyZoom(RinkuBrowser browser) {
         if (browser == null) {
             return;
         }

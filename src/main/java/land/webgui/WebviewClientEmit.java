@@ -1,6 +1,6 @@
 package land.webgui;
 
-import com.cinemamod.mcef.MCEFBrowser;
+import de.keksuccino.rinku.RinkuBrowser;
 import com.google.gson.Gson;
 
 public final class WebviewClientEmit {
@@ -10,8 +10,8 @@ public final class WebviewClientEmit {
 
     /** Called on the Minecraft client thread after receiving a WebviewEmitS2CPayload. */
     public static void dispatch(String eventName, String jsonPayload) {
-        MCEFBrowser main = WebSession.browser();
-        MCEFBrowser hud  = WebSession.hudBrowser();
+        RinkuBrowser main = WebSession.browser();
+        RinkuBrowser hud  = WebSession.hudBrowser();
         if (main == null && hud == null) return;
 
         // GSON.toJson produces a properly escaped JS string literal, e.g. "\"my\\\"event\""
@@ -30,7 +30,7 @@ public final class WebviewClientEmit {
         if (hud != null && hud != main) executeJs(hud, js);
     }
 
-    private static void executeJs(MCEFBrowser browser, String js) {
+    private static void executeJs(RinkuBrowser browser, String js) {
         try {
             String url = browser.getURL();
             browser.executeJavaScript(js, url != null ? url : "", 0);

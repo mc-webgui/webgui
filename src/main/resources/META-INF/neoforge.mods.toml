@@ -22,5 +22,17 @@ versionRange = "${minecraft_range}"
 ordering = "NONE"
 side = "BOTH"
 
+# Rinku is the browser. Without it WebGUI does not merely fail to render a page
+# — its mixins target Rinku classes, so the game dies during mod construction
+# with NoClassDefFoundError. Declaring the dependency turns that crash into
+# FML's "missing dependency" screen, and lets launchers install it.
+# Fabric needs no equivalent: there Rinku ships inside the jar via jar-in-jar.
+[[dependencies.webgui]]
+modId = "rinku"
+type = "required"
+versionRange = "[3,)"
+ordering = "BEFORE"
+side = "CLIENT"
+
 [[mixins]]
 config = "webgui.mixins.json"

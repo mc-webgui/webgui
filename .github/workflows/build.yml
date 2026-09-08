@@ -26,10 +26,15 @@ jobs:
           - version: 1.21.1-neoforge
           - version: 1.21.11-neoforge
             smoke: true
+          # Minecraft 26 gets the server smoke test too: the dev server was
+          # broken on both 26 targets for months precisely because nothing
+          # booted one in CI.
           - version: 26.2-neoforge
             java: '25'
+            smoke: true
           - version: 26.1.2-neoforge
             java: '25'
+            smoke: true
     steps:
       - uses: actions/checkout@v4
 

@@ -1,6 +1,6 @@
 package land.webgui;
 
-import com.cinemamod.mcef.MCEF;
+import de.keksuccino.rinku.Rinku;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -43,7 +43,7 @@ public final class WebviewPageToClientBridge {
                 return true;
             }
         }, true);
-        MCEF.getClient().getHandle().addMessageRouter(router);
+        Rinku.getClient().getHandle().addMessageRouter(router);
     }
 
     private static void dispatch(CefFrame frame, String request, CefQueryCallback callback) {

@@ -1,7 +1,7 @@
 package land.webgui;
 
-import com.cinemamod.mcef.MCEF;
-import com.cinemamod.mcef.MCEFBrowser;
+import de.keksuccino.rinku.Rinku;
+import de.keksuccino.rinku.RinkuBrowser;
 //? if fabric {
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.MinecraftClient;
@@ -60,7 +60,7 @@ public final class WebHudOverlay {
     //? } else {
     /*public static boolean shouldDeliverHudBrowserInput(Minecraft client) {*/
     //? }
-        if (client == null || !MCEF.isInitialized()) {
+        if (client == null || !Rinku.isInitialized()) {
             return false;
         }
         //? if fabric {
@@ -86,7 +86,7 @@ public final class WebHudOverlay {
     //? } else {
     /*public static boolean shouldForwardHudArrowKeys(Minecraft client) {*/
     //? }
-        if (client == null || !MCEF.isInitialized()) {
+        if (client == null || !Rinku.isInitialized()) {
             return false;
         }
         //? if fabric {
@@ -229,7 +229,7 @@ public final class WebHudOverlay {
         //? }
             return;
         }
-        if (!MCEF.isInitialized()) {
+        if (!Rinku.isInitialized()) {
             notifyMcefMissing(client);
             return;
         }
@@ -262,7 +262,7 @@ public final class WebHudOverlay {
     //? } else {
     /*public static void toggleInteractive(Minecraft client) {*/
     //? }
-        if (!MCEF.isInitialized()) {
+        if (!Rinku.isInitialized()) {
             return;
         }
         //? if fabric {
@@ -356,7 +356,7 @@ public final class WebHudOverlay {
         }
     }
 
-    static void onHudBrowserLoadStart(MCEFBrowser browser) {
+    static void onHudBrowserLoadStart(RinkuBrowser browser) {
         if (browser == null) {
             return;
         }
@@ -365,7 +365,7 @@ public final class WebHudOverlay {
         }
     }
 
-    static void onHudBrowserLoadFinished(MCEFBrowser browser) {
+    static void onHudBrowserLoadFinished(RinkuBrowser browser) {
         if (browser == null) {
             return;
         }
@@ -407,7 +407,7 @@ public final class WebHudOverlay {
         if (!hudVisible) {
             return;
         }
-        MCEFBrowser browser = WebSession.hudBrowser();
+        RinkuBrowser browser = WebSession.hudBrowser();
         if (browser == null) {
             return;
         }
@@ -429,7 +429,7 @@ public final class WebHudOverlay {
         //? if >=1.21.5 {
         net.minecraft.util.Identifier tex = browser.getTextureIdentifier();
         //? } else {
-        /*net.minecraft.util.Identifier tex = browser.getTextureLocation();*/
+        /*net.minecraft.util.Identifier tex = browser.getTextureIdentifier();*/
         //? }
         if (tex == null) {
             return;
@@ -446,7 +446,7 @@ public final class WebHudOverlay {
         //? if >=1.21.5 {
         net.minecraft.resources.Identifier tex = browser.getTextureIdentifier();
         //? } else {
-        net.minecraft.resources.ResourceLocation tex = browser.getTextureLocation();
+        net.minecraft.resources.ResourceLocation tex = browser.getTextureIdentifier();
         //? }
         if (tex == null) return;
         int sw = client.getWindow().getGuiScaledWidth();
@@ -502,7 +502,7 @@ public final class WebHudOverlay {
     //? } else {
     /*static void resizeBrowser(Minecraft client) {*/
     //? }
-        MCEFBrowser browser = WebSession.hudBrowser();
+        RinkuBrowser browser = WebSession.hudBrowser();
         if (browser == null) {
             return;
         }

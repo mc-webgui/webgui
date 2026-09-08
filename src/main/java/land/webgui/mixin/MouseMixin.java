@@ -1,6 +1,6 @@
 package land.webgui.mixin;
 
-import com.cinemamod.mcef.MCEFBrowser;
+import de.keksuccino.rinku.RinkuBrowser;
 import land.webgui.WebHudOverlay;
 import land.webgui.WebSession;
 //? if fabric {
@@ -93,7 +93,7 @@ public class MouseMixin {
         if (!WebHudOverlay.containsMouse(mx, my, client)) {
             return;
         }
-        MCEFBrowser browser = WebSession.browser();
+        RinkuBrowser browser = WebSession.browser();
         if (browser != null) {
             int lx = WebHudOverlay.toBrowserLocalX(mx, client);
             int ly = WebHudOverlay.toBrowserLocalY(my, client);
@@ -157,7 +157,7 @@ public class MouseMixin {
         //? }
             return;
         }
-        MCEFBrowser browser = WebSession.browser();
+        RinkuBrowser browser = WebSession.browser();
         if (browser == null) {
             return;
         }
@@ -219,7 +219,7 @@ public class MouseMixin {
         if (!WebHudOverlay.containsMouse(mx, my, client)) {
             return;
         }
-        MCEFBrowser browser = WebSession.browser();
+        RinkuBrowser browser = WebSession.browser();
         if (browser == null) {
             return;
         }

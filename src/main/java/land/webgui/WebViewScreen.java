@@ -1,7 +1,7 @@
 package land.webgui;
 
-import com.cinemamod.mcef.MCEF;
-import com.cinemamod.mcef.MCEFBrowser;
+import de.keksuccino.rinku.Rinku;
+import de.keksuccino.rinku.RinkuBrowser;
 //? if >=1.21.5 {
 //? if fabric {
 import net.minecraft.client.gl.RenderPipelines;
@@ -43,7 +43,7 @@ public class WebViewScreen extends Screen {
 
     private static boolean guiPageReady;
     private final String initialUrl;
-    private MCEFBrowser browser;
+    private RinkuBrowser browser;
 
     //? if fabric {
     public WebViewScreen(String startUrl) {
@@ -60,7 +60,7 @@ public class WebViewScreen extends Screen {
     @Override
     protected void init() {
         super.init();
-        if (!MCEF.isInitialized()) {
+        if (!Rinku.isInitialized()) {
             //? if fabric {
             if (this.client != null && this.client.player != null) {
                 this.client.player.sendMessage(Text.translatable("message.webgui.mcef_not_ready"), false);
@@ -177,7 +177,7 @@ public class WebViewScreen extends Screen {
     }*/
     //? }
 
-    static void onGuiBrowserLoadStart(MCEFBrowser browser) {
+    static void onGuiBrowserLoadStart(RinkuBrowser browser) {
         if (browser == null) {
             return;
         }
@@ -186,7 +186,7 @@ public class WebViewScreen extends Screen {
         }
     }
 
-    static void onGuiBrowserLoadFinished(MCEFBrowser browser) {
+    static void onGuiBrowserLoadFinished(RinkuBrowser browser) {
         if (browser == null) {
             return;
         }
@@ -203,7 +203,7 @@ public class WebViewScreen extends Screen {
             //? if >=1.21.5 {
             Identifier textureLocation = browser.getTextureIdentifier();
             //? } else {
-            /*Identifier textureLocation = browser.getTextureLocation();*/
+            /*Identifier textureLocation = browser.getTextureIdentifier();*/
             //? }
             if (textureLocation != null) {
                 int fw = getBrowserWidth();
@@ -227,7 +227,7 @@ public class WebViewScreen extends Screen {
             //? if >=1.21.5 {
             net.minecraft.resources.Identifier textureLocation = browser.getTextureIdentifier();
             //? } else {
-            net.minecraft.resources.ResourceLocation textureLocation = browser.getTextureLocation();
+            net.minecraft.resources.ResourceLocation textureLocation = browser.getTextureIdentifier();
             //? }
             if (textureLocation != null) {
                 int fw = getBrowserWidth();
