@@ -2,7 +2,7 @@
 
 **Embed any web page as a full-screen GUI or transparent HUD overlay inside Minecraft.**
 
-WebGUI is a Fabric & NeoForge mod that embeds a real Chromium browser (via [MCEF](https://github.com/CinemaMod/mcef)) directly in the game client. Server operators can display any React, Vue, or plain HTML app to their players — as a HUD overlay that auto-opens on join, or as a custom main menu accessible with a keybind.
+WebGUI is a Fabric & NeoForge mod that embeds a real Chromium browser (via [Rinku](https://modrinth.com/mod/rinku), the MCEF fork) directly in the game client. Server operators can display any React, Vue, or plain HTML app to their players — as a HUD overlay that auto-opens on join, or as a custom main menu accessible with a keybind.
 
 [![Build](https://github.com/mc-webgui/webgui/actions/workflows/build.yml/badge.svg)](https://github.com/mc-webgui/webgui/actions/workflows/build.yml)
 [![Modrinth](https://img.shields.io/modrinth/dt/webgui?logo=modrinth&label=Modrinth&color=1bd96a)](https://modrinth.com/project/webgui)
@@ -26,17 +26,17 @@ WebGUI is a Fabric & NeoForge mod that embeds a real Chromium browser (via [MCEF
 
 | Minecraft | Loader | Status |
 |-----------|--------|--------|
-| 26.2 | NeoForge | 🧪 Beta |
-| 26.1 | NeoForge | 🧪 Beta |
+| 26.2 | NeoForge | ✅ Active |
+| 26.1 | NeoForge | ✅ Active |
 | 1.21.5 – 1.21.11 | Fabric | ✅ Active |
 | 1.21.5 – 1.21.11 | NeoForge | ✅ Active |
 | 1.21 – 1.21.1 | Fabric | ✅ Supported |
 | 1.21 – 1.21.1 | NeoForge | ✅ Supported |
 | 1.20.1 | Fabric | ✅ Supported |
 
-Minecraft 26 builds are **NeoForge-only and in beta** — Fabric is on hold until Yarn mappings for 26.x are published.
+Minecraft 26 builds are **NeoForge-only** — Fabric is on hold until Yarn mappings for 26.x are published.
 
-Chromium (~150 MB) is downloaded automatically on first launch. Include [MCEF](https://modrinth.com/mod/mcef) in your modpack to pre-bundle it.
+Chromium (~150 MB) is downloaded automatically on first launch. Include [Rinku](https://modrinth.com/mod/rinku) (formerly MCEF [Keksuccino's Fork]) in your modpack to pre-bundle it.
 
 ---
 

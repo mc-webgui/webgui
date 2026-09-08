@@ -60,7 +60,10 @@ if (sc_loader == "fabric") {
         mappings  "net.fabricmc:yarn:${yarn_mappings}:v2"
         modImplementation "net.fabricmc:fabric-loader:${loader_version}"
         modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
-        include(modImplementation("maven.modrinth:mcef-keksuccino:${mcef_version}"))
+        // MCEF [Keksuccino's Fork] was renamed to Rinku; the old `mcef-keksuccino`
+        // slug no longer resolves on Modrinth's maven. The 2.2.x artifacts are
+        // still served under the new slug, so only the artifact id changes here.
+        include(modImplementation("maven.modrinth:rinku:${mcef_version}"))
     }
 } else {
     neoForge {
@@ -88,7 +91,7 @@ if (sc_loader == "fabric") {
         }
     }
     dependencies {
-        implementation "maven.modrinth:mcef-keksuccino:${mcef_version}"
+        implementation "maven.modrinth:rinku:${mcef_version}"
     }
 }
 
