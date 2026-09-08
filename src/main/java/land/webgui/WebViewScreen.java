@@ -159,6 +159,13 @@ public class WebViewScreen extends Screen {
     @Override
     public void close() {
         guiPageReady = false;
+        // Escaping a death page that never loaded has to respawn, or the player
+        // is dropped into the world still dead with nothing to click.
+        boolean respawnOnClose = WebGUIDeathScreen.active() && WebGUIDeathScreen.loadFailed();
+        WebGUIDeathScreen.setActive(false);
+        if (respawnOnClose && this.client != null && this.client.player != null) {
+            this.client.player.requestRespawn();
+        }
         WebSession.closeGuiAndRestoreHud();
         super.close();
         if (this.client != null) {
@@ -169,6 +176,13 @@ public class WebViewScreen extends Screen {
     /*@Override
     public void onClose() {
         guiPageReady = false;
+        // Escaping a death page that never loaded has to respawn, or the player
+        // is dropped into the world still dead with nothing to click.
+        boolean respawnOnClose = WebGUIDeathScreen.active() && WebGUIDeathScreen.loadFailed();
+        WebGUIDeathScreen.setActive(false);
+        if (respawnOnClose && this.minecraft != null && this.minecraft.player != null) {
+            this.minecraft.player.respawn();
+        }
         WebSession.closeGuiAndRestoreHud();
         super.onClose();
         if (this.minecraft != null) {
@@ -472,8 +486,13 @@ public class WebViewScreen extends Screen {
     }
     //? }
 
+    /**
+     * Escape closes a normal web GUI, but not one standing in for the death
+     * screen — vanilla does not let a dead player walk away from it either, and
+     * doing so would drop them into the world with no way back to respawn.
+     */
     @Override
     public boolean shouldCloseOnEsc() {
-        return true;
+        return !WebGUIDeathScreen.active() || WebGUIDeathScreen.loadFailed();
     }
 }

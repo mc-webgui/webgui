@@ -98,6 +98,39 @@ public final class WebviewPageToClientBridge {
                     }
                 });
             }
+            // Replacing the death screen takes away the vanilla Respawn button, so
+            // the page has to be able to press it. Only honoured while our screen is
+            // actually standing in for the death screen — otherwise any page could
+            // respawn a living player.
+            // Replacing the death screen takes away the vanilla Respawn button, so
+            // the page has to be able to press it. Only honoured while our screen is
+            // actually standing in for the death screen — otherwise any page could
+            // respawn a living player.
+            case "respawn" -> {
+                //? if fabric {
+                MinecraftClient mc = MinecraftClient.getInstance();
+                //? } else {
+                /*Minecraft mc = Minecraft.getInstance();*/
+                //? }
+                mc.execute(() -> {
+                    if (!WebGUIDeathScreen.active() || mc.player == null) {
+                        return;
+                    }
+                    WebGUIDeathScreen.setActive(false);
+                    // Respawn first, and never clear the screen ourselves. The
+                    // client still counts as dead until the server answers, so
+                    // setScreen(null) makes vanilla reopen the death screen right
+                    // away — which this very interceptor then replaces with a
+                    // second browser nothing closes. Vanilla closes the screen on
+                    // its own once the respawn lands.
+                    //? if fabric {
+                    mc.player.requestRespawn();
+                    //? } else {
+                    /*mc.player.respawn();*/
+                    //? }
+                    WebSession.dispose();
+                });
+            }
             case "command" -> {
                 String cmd = obj.has("command") && !obj.get("command").isJsonNull()
                         ? obj.get("command").getAsString() : null;

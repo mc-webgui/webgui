@@ -37,6 +37,7 @@ public final class WebviewPayloads {
     public static final Identifier PAGE_EVENT_CHANNEL     = Identifier.of(WebGUIMod.MOD_ID, "page_event");
     public static final Identifier ENTITY_CONTEXT_CHANNEL = Identifier.of(WebGUIMod.MOD_ID, "entity_context");
     public static final Identifier TRUSTED_ORIGINS_CHANNEL = Identifier.of(WebGUIMod.MOD_ID, "trusted_origins");
+    public static final Identifier DEATH_SCREEN_CHANNEL   = Identifier.of(WebGUIMod.MOD_ID, "death_screen");
     //? } else {
     /*//? if >=1.21.5 {
     public static final Identifier OPEN_WEB_CHANNEL       = Identifier.fromNamespaceAndPath(WebGUIMod.MOD_ID, "open_web");
@@ -45,6 +46,7 @@ public final class WebviewPayloads {
     public static final Identifier PAGE_EVENT_CHANNEL     = Identifier.fromNamespaceAndPath(WebGUIMod.MOD_ID, "page_event");
     public static final Identifier ENTITY_CONTEXT_CHANNEL = Identifier.fromNamespaceAndPath(WebGUIMod.MOD_ID, "entity_context");
     public static final Identifier TRUSTED_ORIGINS_CHANNEL = Identifier.fromNamespaceAndPath(WebGUIMod.MOD_ID, "trusted_origins");
+    public static final Identifier DEATH_SCREEN_CHANNEL   = Identifier.fromNamespaceAndPath(WebGUIMod.MOD_ID, "death_screen");
     //? } else {
     public static final ResourceLocation OPEN_WEB_CHANNEL       = ResourceLocation.fromNamespaceAndPath(WebGUIMod.MOD_ID, "open_web");
     public static final ResourceLocation MAIN_MENU_CHANNEL      = ResourceLocation.fromNamespaceAndPath(WebGUIMod.MOD_ID, "set_main_menu");
@@ -52,6 +54,7 @@ public final class WebviewPayloads {
     public static final ResourceLocation PAGE_EVENT_CHANNEL     = ResourceLocation.fromNamespaceAndPath(WebGUIMod.MOD_ID, "page_event");
     public static final ResourceLocation ENTITY_CONTEXT_CHANNEL = ResourceLocation.fromNamespaceAndPath(WebGUIMod.MOD_ID, "entity_context");
     public static final ResourceLocation TRUSTED_ORIGINS_CHANNEL = ResourceLocation.fromNamespaceAndPath(WebGUIMod.MOD_ID, "trusted_origins");
+    public static final ResourceLocation DEATH_SCREEN_CHANNEL   = ResourceLocation.fromNamespaceAndPath(WebGUIMod.MOD_ID, "death_screen");
     //? }*/
     //? }
 
@@ -128,6 +131,30 @@ public final class WebviewPayloads {
                 PacketCodecs.string(MAX_EVENT_DATA_LENGTH),
                 WebviewEntityContextS2CPayload::entityJson,
                 WebviewEntityContextS2CPayload::new);
+
+        @Override
+        public Id<? extends CustomPayload> getId() {
+            return ID;
+        }
+    }
+
+    /**
+     * S2C: the page that replaces the vanilla death screen, plus what killed the player.
+     *
+     * The url is pushed on join and on config reload with an empty info field, so the
+     * client already knows whether to suppress the vanilla screen by the time someone
+     * dies — deciding that at death time would race the vanilla death packet. On death
+     * the same payload carries the info JSON.
+     */
+    public record WebviewDeathS2CPayload(String url, String infoJson) implements CustomPayload {
+        public static final CustomPayload.Id<WebviewDeathS2CPayload> ID =
+                new CustomPayload.Id<>(DEATH_SCREEN_CHANNEL);
+        public static final PacketCodec<RegistryByteBuf, WebviewDeathS2CPayload> CODEC = PacketCodec.tuple(
+                PacketCodecs.string(WebviewNetworking.MAX_URL_LENGTH),
+                WebviewDeathS2CPayload::url,
+                PacketCodecs.string(MAX_EVENT_DATA_LENGTH),
+                WebviewDeathS2CPayload::infoJson,
+                WebviewDeathS2CPayload::new);
 
         @Override
         public Id<? extends CustomPayload> getId() {
@@ -214,6 +241,25 @@ public final class WebviewPayloads {
                         ByteBufCodecs.stringUtf8(MAX_EVENT_DATA_LENGTH),
                         WebviewEntityContextS2CPayload::entityJson,
                         WebviewEntityContextS2CPayload::new);
+
+        @Override
+        public CustomPacketPayload.Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
+    // S2C: the page that replaces the vanilla death screen, plus what killed the player.
+    // The url arrives on join and on config reload with an empty info field so the client
+    // already knows whether to suppress the vanilla screen before anyone dies; deciding
+    // that at death time would race the vanilla death packet.
+    public record WebviewDeathS2CPayload(String url, String infoJson) implements CustomPacketPayload {
+        public static final CustomPacketPayload.Type<WebviewDeathS2CPayload> TYPE =
+                new CustomPacketPayload.Type<>(DEATH_SCREEN_CHANNEL);
+        public static final StreamCodec<RegistryFriendlyByteBuf, WebviewDeathS2CPayload> STREAM_CODEC =
+                StreamCodec.composite(
+                        ByteBufCodecs.stringUtf8(WebviewNetworking.MAX_URL_LENGTH),
+                        WebviewDeathS2CPayload::url,
+                        ByteBufCodecs.stringUtf8(MAX_EVENT_DATA_LENGTH),
+                        WebviewDeathS2CPayload::infoJson,
+                        WebviewDeathS2CPayload::new);
 
         @Override
         public CustomPacketPayload.Type<? extends CustomPacketPayload> type() { return TYPE; }

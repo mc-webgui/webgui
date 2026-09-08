@@ -37,6 +37,7 @@ public final class WebviewNetworking {
         PayloadTypeRegistry.playS2C().register(WebviewPayloads.WebviewEmitS2CPayload.ID, WebviewPayloads.WebviewEmitS2CPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(WebviewPayloads.WebviewEntityContextS2CPayload.ID, WebviewPayloads.WebviewEntityContextS2CPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(WebviewPayloads.WebviewTrustedOriginsS2CPayload.ID, WebviewPayloads.WebviewTrustedOriginsS2CPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(WebviewPayloads.WebviewDeathS2CPayload.ID, WebviewPayloads.WebviewDeathS2CPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(WebviewPayloads.WebviewPageEventC2SPayload.ID, WebviewPayloads.WebviewPageEventC2SPayload.CODEC);
         //? }
     }
@@ -71,6 +72,8 @@ public final class WebviewNetworking {
                         WebviewPayloads.WebviewEntityContextS2CPayload.STREAM_CODEC, (payload, ctx) -> {});
                 reg.playToClient(WebviewPayloads.WebviewTrustedOriginsS2CPayload.TYPE,
                         WebviewPayloads.WebviewTrustedOriginsS2CPayload.STREAM_CODEC, (payload, ctx) -> {});
+                reg.playToClient(WebviewPayloads.WebviewDeathS2CPayload.TYPE,
+                        WebviewPayloads.WebviewDeathS2CPayload.STREAM_CODEC, (payload, ctx) -> {});
             }
         });
     }*/
@@ -175,6 +178,26 @@ public final class WebviewNetworking {
         //? }
     }
 
+    /**
+     * Tells the client which page replaces the vanilla death screen, and — when the
+     * player has just died — what killed them.
+     *
+     * The URL carries a per-player token like any other page the mod opens, so the
+     * death page can verify who it is talking about.
+     */
+    public static void sendDeathScreen(ServerPlayerEntity player, String url, String infoJson) {
+        String u = (url == null || url.isBlank()) ? "" : withPlayerToken(player, url);
+        String info = (infoJson == null || infoJson.isBlank()) ? "" : sanitizeStr(infoJson, WebviewPayloads.MAX_EVENT_DATA_LENGTH);
+        //? if >=1.20.5 {
+        ServerPlayNetworking.send(player, new WebviewPayloads.WebviewDeathS2CPayload(u, info));
+        //? } else {
+        /*PacketByteBuf buf = PacketByteBufs.create();
+        buf.writeString(u, MAX_URL_LENGTH);
+        buf.writeString(info, WebviewPayloads.MAX_EVENT_DATA_LENGTH);
+        ServerPlayNetworking.send(player, WebviewPayloads.DEATH_SCREEN_CHANNEL, buf);*/
+        //? }
+    }
+
     public static void sendTrustedOrigins(ServerPlayerEntity player, String origins) {
         String o = origins == null ? "" : origins;
         //? if >=1.20.5 {
@@ -229,6 +252,12 @@ public final class WebviewNetworking {
 
     public static void sendMainMenuUrl(ServerPlayer player, String url) {
         PacketDistributor.sendToPlayer(player, new WebviewPayloads.WebUIMainMenuPayload(sanitizeUrl(url)));
+    }
+
+    public static void sendDeathScreen(ServerPlayer player, String url, String infoJson) {
+        String u = (url == null || url.isBlank()) ? "" : withPlayerToken(player, url);
+        String info = (infoJson == null || infoJson.isBlank()) ? "" : sanitizeStr(infoJson, WebviewPayloads.MAX_EVENT_DATA_LENGTH);
+        PacketDistributor.sendToPlayer(player, new WebviewPayloads.WebviewDeathS2CPayload(u, info));
     }
 
     public static void sendTrustedOrigins(ServerPlayer player, String origins) {

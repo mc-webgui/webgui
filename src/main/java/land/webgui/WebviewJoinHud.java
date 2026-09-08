@@ -25,6 +25,14 @@ public final class WebviewJoinHud {
 
                     WebviewNetworking.sendTrustedOrigins(player, WebviewServerConfig.trustedCommandOriginsJoined());
 
+        // Pushed now, not at death: the client has to know whether to suppress the
+        // vanilla death screen the instant it is opened.
+        WebviewNetworking.sendDeathScreen(player, WebviewServerConfig.deathScreenUrl(), "");
+
+                    // Pushed now, not at death: the client has to know whether to
+                    // suppress the vanilla death screen the instant it is opened.
+                    WebviewNetworking.sendDeathScreen(player, WebviewServerConfig.deathScreenUrl(), "");
+
                     String mainMenuUrl = WebviewServerConfig.mainMenuUrl();
                     if (!mainMenuUrl.isEmpty()) {
                         WebviewNetworking.sendMainMenuUrl(player, mainMenuUrl);

@@ -44,6 +44,9 @@ public final class WebviewServerConfig {
 
     private String mainMenuUrl = "";
 
+    // Page shown instead of the vanilla death screen. Empty = keep the vanilla screen.
+    private String deathScreenUrl = "";
+
     // {"version":"1.2.3"} or GitHub Releases {"tag_name":"v1.2.3","html_url":"..."}; empty = disabled
     private String updateCheckUrl = "";
 
@@ -75,6 +78,8 @@ public final class WebviewServerConfig {
             o.addProperty("autoHudUrl", "http://your-site.example/hud");
 
             o.addProperty("mainMenuUrl", "http://your-site.example/menu");
+
+            o.addProperty("deathScreenUrl", "");
 
             o.addProperty("updateCheckUrl", "");
 
@@ -194,6 +199,17 @@ public final class WebviewServerConfig {
 
     public static String mainMenuUrl() {
         String u = instance.mainMenuUrl;
+        return u == null ? "" : u.trim();
+    }
+
+    /**
+     * Page to show instead of the vanilla death screen; empty keeps the vanilla one.
+     *
+     * Opt-in on purpose: replacing the death screen takes away the player's only
+     * way to respawn, so it happens only when a server explicitly asks for it.
+     */
+    public static String deathScreenUrl() {
+        String u = instance.deathScreenUrl;
         return u == null ? "" : u.trim();
     }
 
