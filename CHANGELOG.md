@@ -5,7 +5,7 @@
 ### Changed
 - **The browser library is now [Rinku](https://modrinth.com/mod/rinku), not MCEF.** MCEF [Keksuccino's Fork] was renamed, and its mod id changed from `mcef` to `rinku`.
   - **On Fabric there is nothing to do** — Rinku ships inside the WebGUI jar, as MCEF did before it.
-  - **On NeoForge, replace the MCEF jar in your mods folder with Rinku.** WebGUI does not bundle it there, so without the swap there is no browser to draw.
+  - **On NeoForge, install [Rinku](https://modrinth.com/mod/rinku) alongside WebGUI** and remove MCEF. WebGUI now declares Rinku as a required dependency, so launchers install it for you; if you copy jars by hand you need to add it yourself.
 - Chromium is now version 151. The browser is no longer capped at 60 FPS, and browser windows can be muted.
 - **Minecraft 26.1 and 26.2 are out of beta.** Both ship as regular releases now instead of beta builds.
 - Updated NeoForge (26.2.0.82, 26.1.2.107, 21.11.45, 21.1.250), Fabric Loader 0.19.5, Fabric API, and Yarn for 1.21.11.
@@ -13,6 +13,7 @@
 ### Fixed
 - **Fixed a client crash on Minecraft 26.2** that hit after opening a web GUI a handful of times: `Texture view Sampler0 (MCEF Browser Texture 1x1) has been closed!`. If you worked around it by setting `browser-preload-enabled=false`, you can turn browser preloading back on.
 - **Fixed the browser refusing to start against current Chromium.** WebGUI passed `--use-gl=desktop`, a switch Chromium removed years ago. It went unnoticed while the browser library still shipped an older Chromium, and would have broken on any Chromium update.
+- **Fixed the game crashing on startup on NeoForge when the browser library was missing.** WebGUI declared no dependency on it at all, so launchers installed nothing and the game died during mod loading with `NoClassDefFoundError: org/cef/handler/CefDisplayHandler` instead of telling you what was missing. Fabric was never affected, because the library ships inside the jar there.
 - Fixed the Minecraft 26 development server failing to boot, which made the mod impossible to test locally on those versions. Released servers were never affected.
 
 ## 1.6.2 - 2026-07-26

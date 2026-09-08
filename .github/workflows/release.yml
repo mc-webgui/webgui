@@ -155,6 +155,7 @@ jobs:
           version: ${{ steps.meta.outputs.version }}+mc1.21.1-neoforge
           version-type: release
           loaders: neoforge
+          dependencies: rinku(required)
           game-versions: '1.21.1'
           changelog: ${{ steps.notes.outputs.body }}
           files: versions/1.21.1-neoforge/build/libs/!(*-@(dev|sources|javadoc)).jar
@@ -170,6 +171,7 @@ jobs:
           version: ${{ steps.meta.outputs.version }}+mc1.21.11-neoforge
           version-type: release
           loaders: neoforge
+          dependencies: rinku(required)
           game-versions: '1.21.11'
           changelog: ${{ steps.notes.outputs.body }}
           files: versions/1.21.11-neoforge/build/libs/!(*-@(dev|sources|javadoc)).jar
@@ -185,6 +187,7 @@ jobs:
           version: ${{ steps.meta.outputs.version }}+mc26.2-neoforge
           version-type: release
           loaders: neoforge
+          dependencies: rinku(required)
           game-versions: '26.2'
           changelog: ${{ steps.notes.outputs.body }}
           files: versions/26.2-neoforge/build/libs/!(*-@(dev|sources|javadoc)).jar
@@ -200,6 +203,7 @@ jobs:
           version: ${{ steps.meta.outputs.version }}+mc26.1.2-neoforge
           version-type: release
           loaders: neoforge
+          dependencies: rinku(required)
           game-versions: '26.1.2'
           changelog: ${{ steps.notes.outputs.body }}
           files: versions/26.1.2-neoforge/build/libs/!(*-@(dev|sources|javadoc)).jar
