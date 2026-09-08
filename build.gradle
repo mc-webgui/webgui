@@ -81,6 +81,10 @@ if (sc_loader == "fabric") {
         into layout.projectDirectory.dir('run/mods')
     }
 
+    def removeRinkuForServerRun = tasks.register('removeRinkuForServerRun', Delete) {
+        delete fileTree(layout.projectDirectory.dir('run/mods')) { include 'rinku*.jar' }
+    }
+
     neoForge {
         version = project.neoforge_version
         // Register the mod so moddev's JUnit runtime can load it during tests.
@@ -107,6 +111,10 @@ if (sc_loader == "fabric") {
             }
             server {
                 server()
+                // Both dev runs share versions/<target>/run, so the jar installed
+                // for the client is visible to the server too — which is what
+                // kills it. Take it back out before the server starts.
+                taskBefore(removeRinkuForServerRun)
             }
         }
     }
