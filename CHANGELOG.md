@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- **Custom death screen.** Set `deathScreenUrl` in `config/webgui/server.json` and the vanilla death screen is replaced by your page. Leave it empty and nothing changes — the feature is opt-in because replacing that screen takes away the player's only way to respawn.
+  - The page receives a `webgui:death` event describing what happened: `killer` (`{type: "player" | "mob" | "environment", name, uuid}`), the damage `cause`, the vanilla `deathMessage`, and `hardcore` / `canRespawn` flags.
+  - `window.webgui.respawn()` respawns the player, standing in for the vanilla Respawn button.
+  - Escape does not close the page, exactly as the vanilla screen refuses to close. If the page fails to load, Escape starts working again and respawns instead, so a broken page can never trap a player.
+  - The vanilla screen is left alone while the browser is still starting, so dying during the first seconds of a session shows the normal screen rather than nothing.
+
 ## 1.7.0 - 2026-09-08
 
 ### Changed

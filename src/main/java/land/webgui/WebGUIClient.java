@@ -11,6 +11,8 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.ScreenEvent;
+import net.minecraft.client.gui.screens.DeathScreen;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;*/
 //? }
@@ -58,6 +60,10 @@ public final class WebGUIClient
         ClientPlayNetworking.registerGlobalReceiver(WebviewPayloads.WebviewTrustedOriginsS2CPayload.ID, (payload, context) -> {
             context.client().execute(() -> WebGUITrustedOrigins.set(payload.origins()));
         });
+
+        ClientPlayNetworking.registerGlobalReceiver(WebviewPayloads.WebviewDeathS2CPayload.ID, (payload, context) -> {
+            context.client().execute(() -> onDeathPayload(payload.url(), payload.infoJson()));
+        });
         //? } else {
         /*ClientPlayNetworking.registerGlobalReceiver(WebviewPayloads.OPEN_WEB_CHANNEL, (client, handler, buf, responseSender) -> {
             int protocolVersion = buf.readVarInt();
@@ -83,6 +89,12 @@ public final class WebGUIClient
         ClientPlayNetworking.registerGlobalReceiver(WebviewPayloads.TRUSTED_ORIGINS_CHANNEL, (client, handler, buf, responseSender) -> {
             String origins = buf.readString(WebviewPayloads.MAX_EVENT_DATA_LENGTH);
             client.execute(() -> WebGUITrustedOrigins.set(origins));
+        });
+
+        ClientPlayNetworking.registerGlobalReceiver(WebviewPayloads.DEATH_SCREEN_CHANNEL, (client, handler, buf, responseSender) -> {
+            String url  = buf.readString(WebviewNetworking.MAX_URL_LENGTH);
+            String info = buf.readString(WebviewPayloads.MAX_EVENT_DATA_LENGTH);
+            client.execute(() -> onDeathPayload(url, info));
         });*/
         //? }
 
@@ -105,6 +117,19 @@ public final class WebGUIClient
         WebSession.dispose();
         WebGUIMainMenuUrl.setUrl("");
         WebGUITrustedOrigins.clear();
+        WebGUIDeathScreen.clear();
+    }
+
+    /**
+     * A url with no info is the join-time push; an info payload means the player
+     * just died. Both arrive on the same channel because the client needs the url
+     * in hand before the death, not alongside it.
+     */
+    static void onDeathPayload(String url, String infoJson) {
+        WebGUIDeathScreen.setUrl(url);
+        if (infoJson != null && !infoJson.isBlank()) {
+            WebGUIDeathScreen.setInfo(infoJson);
+        }
     }
 
     private static void handleOpenPayload(net.minecraft.client.MinecraftClient client, int mode, String url) {
@@ -140,6 +165,7 @@ public final class WebGUIClient
         WebHudOverlay.register();
         NeoForge.EVENT_BUS.addListener(WebGUIClient::onClientTick);
         NeoForge.EVENT_BUS.addListener(WebGUIClient::onLoggingOut);
+        NeoForge.EVENT_BUS.addListener(WebGUIClient::onScreenOpening);
     }
 
     private static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
@@ -153,6 +179,17 @@ public final class WebGUIClient
         WebSession.dispose();
         WebGUIMainMenuUrl.setUrl("");
         WebGUITrustedOrigins.clear();
+        WebGUIDeathScreen.clear();
+    }
+
+    // A url with no info is the join-time push; an info payload means the player
+    // just died. Both share a channel because the client needs the url in hand
+    // before the death rather than alongside it.
+    static void onDeathPayload(String url, String infoJson) {
+        WebGUIDeathScreen.setUrl(url);
+        if (infoJson != null && !infoJson.isBlank()) {
+            WebGUIDeathScreen.setInfo(infoJson);
+        }
     }
 
     // Called only on the client (from WebviewNetworking.registerPayloadTypes) so
@@ -172,6 +209,25 @@ public final class WebGUIClient
                 (payload, ctx) -> ctx.enqueueWork(() -> WebviewClientBridge.setEntityContext(payload.entityJson())));
         reg.playToClient(WebviewPayloads.WebviewTrustedOriginsS2CPayload.TYPE, WebviewPayloads.WebviewTrustedOriginsS2CPayload.STREAM_CODEC,
                 (payload, ctx) -> ctx.enqueueWork(() -> WebGUITrustedOrigins.set(payload.origins())));
+        reg.playToClient(WebviewPayloads.WebviewDeathS2CPayload.TYPE, WebviewPayloads.WebviewDeathS2CPayload.STREAM_CODEC,
+                (payload, ctx) -> ctx.enqueueWork(() -> onDeathPayload(payload.url(), payload.infoJson())));
+    }
+
+    // Swaps the vanilla death screen for the server's page. Fabric needs a mixin
+    // for this; NeoForge hands us the screen before it opens, which also spares
+    // us Mojang mappings renaming setScreen to setScreenAndShow in 26.2.
+    private static void onScreenOpening(ScreenEvent.Opening event) {
+        if (!(event.getNewScreen() instanceof DeathScreen) || !WebGUIDeathScreen.configured()) {
+            return;
+        }
+        // No browser, no page. WebViewScreen closes itself when Chromium is not
+        // ready, vanilla reopens the death screen because the player is still
+        // dead, and we would replace it again — a loop that crashes the client.
+        if (!Rinku.isInitialized()) {
+            return;
+        }
+        WebGUIDeathScreen.setActive(true);
+        event.setNewScreen(new WebViewScreen(WebGUIDeathScreen.url()));
     }
 
     private static void onClientTick(ClientTickEvent.Post event) {

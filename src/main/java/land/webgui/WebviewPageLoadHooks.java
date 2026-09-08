@@ -46,6 +46,14 @@ public final class WebviewPageLoadHooks {
                     mc.execute(() -> WebviewClientBridge.pushAfterDocumentLoad(mc));
                 }
 
+                // The death payload lands while this page is still being created, so
+                // an immediate emit would arrive before any listener exists. Replay it
+                // now that the document is up.
+                String death = WebGUIDeathScreen.info();
+                if (death != null && WebGUIDeathScreen.active()) {
+                    WebviewClientEmit.dispatch("death", death);
+                }
+
                 if (WebSession.mode() == WebSession.Mode.HUD_OVERLAY) {
                     WebHudOverlay.onHudBrowserLoadFinished(active);
                 } else if (WebSession.mode() == WebSession.Mode.GUI_SCREEN) {
@@ -59,6 +67,15 @@ public final class WebviewPageLoadHooks {
                                     String errorText, String failedUrl) {
                 RinkuBrowser active = WebSession.browser();
                 if (active == null || browser != active) return;
+
+                // A death page that will not load would otherwise leave the player
+                // staring at nothing with no way to respawn, so let Escape out.
+                if (WebGUIDeathScreen.active()) {
+                    WebGUIDeathScreen.setLoadFailed(true);
+                    WebGUIMod.LOGGER.warn("webgui: death page failed to load ({}): {} — Escape will respawn instead",
+                            errorText, failedUrl);
+                }
+
                 if (WebSession.mode() == WebSession.Mode.HUD_OVERLAY) {
                     WebHudOverlay.onHudBrowserLoadFinished(active);
                 } else if (WebSession.mode() == WebSession.Mode.GUI_SCREEN) {

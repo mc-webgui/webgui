@@ -27,6 +27,11 @@ public final class WebviewScriptInject {
                       window.webgui.postToGame({ channel: 'close' });
                     };
                   }
+                  if (typeof window.webgui.respawn !== 'function') {
+                    window.webgui.respawn = function () {
+                      window.webgui.postToGame({ channel: 'respawn' });
+                    };
+                  }
                   if (typeof window.webgui.on !== 'function') {
                     window.webgui._hs = window.webgui._hs || {};
                     window.webgui.on = function (name, fn) {

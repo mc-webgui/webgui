@@ -43,6 +43,7 @@ public final class WebGUIMod
         });
         WebviewCommands.register();
         WebviewJoinHud.register();
+        land.webgui.server.WebviewDeathListener.register();
         LOGGER.info("WebGUI common init (S2C payloads, commands).");
     }
     //? } else {
@@ -53,6 +54,7 @@ public final class WebGUIMod
         EntityInteractionListener.register();
         WebviewCommands.register();
         WebviewJoinHud.register();
+        land.webgui.server.WebviewDeathListener.register();
         NeoForge.EVENT_BUS.addListener(this::onServerStarting);
         NeoForge.EVENT_BUS.addListener(this::onServerStarted);
         //? if >=1.21.5 {
