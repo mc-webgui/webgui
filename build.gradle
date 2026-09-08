@@ -63,6 +63,24 @@ if (sc_loader == "fabric") {
         include(modImplementation("maven.modrinth:rinku:${rinku_version}"))
     }
 } else {
+    configurations {
+        rinkuArtifact
+    }
+
+    // Rinku is a client-side library, and NeoForge's dev dist cleaner strips
+    // the client classes it constructs against. A plain `runtimeOnly` feeds
+    // BOTH dev runs, so runServer used to die during mod loading with
+    // NoClassDefFoundError on Screen — on every Minecraft 26 build, and never
+    // caught because 26.x had no server smoke test. moddev's per-run classpath
+    // is gone on modern Minecraft ("no additional classpath anymore"), so scope
+    // it by installing the jar into the client run's mods folder instead. That
+    // also mirrors production, where a server operator simply never installs
+    // Rinku and WebGUI never declares it as a dependency.
+    def installRinkuForClientRun = tasks.register('installRinkuForClientRun', Copy) {
+        from configurations.rinkuArtifact
+        into layout.projectDirectory.dir('run/mods')
+    }
+
     neoForge {
         version = project.neoforge_version
         // Register the mod so moddev's JUnit runtime can load it during tests.
@@ -81,25 +99,27 @@ if (sc_loader == "fabric") {
         runs {
             client {
                 client()
+                // Rinku reaches the client the way a player installs it: as a
+                // jar in the mods folder, not on the runtime classpath. Keeping
+                // it off the classpath is what keeps runServer alive — see the
+                // installRinkuForClientRun task below.
+                taskBefore(installRinkuForClientRun)
             }
             server {
                 server()
             }
         }
     }
+
+
     // Rinku ships its NeoForge builds inconsistently: 26.2 has classes at the
     // top level, but 1.21.1 and 26.1.2 are jarJar wrappers whose real mod sits
     // in META-INF/jarjar/. NeoForge unpacks that at runtime, so the game is
     // happy either way — javac is not, and sees an empty jar. Compile against
     // whatever actually holds the classes; the published artifact stays on the
     // runtime classpath untouched.
-    configurations {
-        rinkuArtifact
-    }
-
     dependencies {
         rinkuArtifact "maven.modrinth:rinku:${rinku_version}"
-        runtimeOnly   "maven.modrinth:rinku:${rinku_version}"
     }
 
     def rinkuClassesDir = layout.buildDirectory.dir('rinku-compile')
