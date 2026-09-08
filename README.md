@@ -43,7 +43,9 @@ Chromium (~150 MB) is downloaded automatically on first launch. Include [Rinku](
 ## Installation
 
 1. Download the latest JAR from [Modrinth](https://modrinth.com/project/webgui) (pick the right MC version).
-2. Place it in `.minecraft/mods/` (on Fabric, also add Fabric API; NeoForge needs no extra dependencies).
+2. Place it in `.minecraft/mods/`.
+   - **Fabric:** also add Fabric API. The browser library ships inside the WebGUI jar.
+   - **NeoForge:** also add [Rinku](https://modrinth.com/mod/rinku) — it is not bundled, and WebGUI cannot render a page without it.
 3. Start the game.
 
 ---
