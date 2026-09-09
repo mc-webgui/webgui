@@ -131,10 +131,10 @@ public final class WebviewCommands {
                                         .executes(ctx -> {
                                             String msg = WebviewServerConfig.reload();
                                             EntityBindingStore.load();
-                                            // The death page url lives on the client, so a reload
-                                            // has to re-push it or online players keep the old one.
+                                            // Every setting the client holds a copy of has to be
+                                            // pushed again, or online players keep the old one.
                                             for (ServerPlayerEntity p : ctx.getSource().getServer().getPlayerManager().getPlayerList()) {
-                                                WebviewNetworking.sendDeathScreen(p, WebviewServerConfig.deathScreenUrl(), "");
+                                                WebviewNetworking.sendConfigSnapshot(p);
                                             }
                                             ctx.getSource().sendFeedback(() -> Text.literal(msg), true);
                                             return 1;
@@ -204,10 +204,10 @@ public final class WebviewCommands {
                                 .executes(ctx -> {
                                     String msg = WebviewServerConfig.reload();
                                     EntityBindingStore.load();
-                                    // The death page url lives on the client, so a reload has to
-                                    // re-push it or online players keep the old one.
+                                    // Every setting the client holds a copy of has to be pushed
+                                    // again, or online players keep the old one.
                                     for (ServerPlayer p : ctx.getSource().getServer().getPlayerList().getPlayers()) {
-                                        WebviewNetworking.sendDeathScreen(p, WebviewServerConfig.deathScreenUrl(), "");
+                                        WebviewNetworking.sendConfigSnapshot(p);
                                     }
                                     ctx.getSource().sendSuccess(() -> Component.literal(msg), true);
                                     return 1;

@@ -5,7 +5,7 @@
 ### Added
 - **The server can host its own pages.** Drop files in `config/webgui/web/` and point any URL setting at them with `webgui:/index.html` — no web host, no domain, no port to open. They travel down the connection the player is already on, so it works behind NAT like everything else a server sends.
   - Addressed by SHA-256: a client that already has a file never asks for it again, and a changed file is simply a different name, so a page can never be stale.
-  - The folder is created on first start with a working page in it, and `/webgui reload` picks up edits without a restart.
+  - The folder is created on first start with a working page in it, and `/webgui reload` picks up edits without a restart — everyone online is told about the new files, and a bundled page a player already has open is refreshed in place, so you can edit a file and watch the result.
   - Limits, so a mistake here cannot take a server down: 8 MiB per file, 64 MiB in total, 2000 files, and `assetBytesPerSecond` (default 4 MiB/s per player).
   - **External hosting is unchanged.** `http://` and `https://` URLs behave exactly as before, and the two mix freely.
   - One thing to know: a bundled page is served from `http://127.0.0.1:25580`, not from your domain, so your API needs to allow that origin in CORS.
@@ -16,6 +16,7 @@
 - **A file can be downloaded from a page.** Files land in `webgui-downloads/` under the game directory and the player is told the name. Previously CEF asked the host where to put a download, heard nothing, and threw it away — so an invoice or a CSV export was simply unclickable.
 
 ### Fixed
+- **`/webgui reload` now applies every setting it claims to.** `trustedCommandOrigins` and `mainMenuUrl` are copies each connected client holds, and the reload never re-sent them: removing an origin from the trusted list, or changing the main menu page, quietly did nothing for anyone already online until they reconnected. Joining and reloading now push the same set through one path, so they cannot drift apart again.
 - **Fixed `window.webgui` being undefined while a page was still loading.** The bridge was injected only after the document finished, so a plain inline script calling it threw `Cannot read properties of undefined`; only pages that waited for `DOMContentLoaded` or later ever worked.
 
 ## 1.7.1 - 2026-09-09

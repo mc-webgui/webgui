@@ -61,13 +61,21 @@ public final class WebGUIAssetServer {
     }
 
     /**
-     * Starts the server if it is not already up, and rotates the session token.
+     * Starts the server if it is not already up, and mints a session token if there is none.
      *
      * Called when a manifest arrives rather than at launch: a client that never joins a
      * server that ships pages should not be listening on anything at all.
+     *
+     * The token is minted once per session and kept, not rotated on every manifest. A
+     * server may send a second manifest while the player is in the world — {@code /webgui
+     * reload} does exactly that — and rotating here would move the origin out from under
+     * every page already open, so an operator editing a file watched their HUD turn into
+     * a 404. Leaving a server clears the token, which is what actually has to invalidate.
      */
     public static synchronized void ensureStarted() {
-        rotateToken();
+        if (sessionToken.isEmpty()) {
+            rotateToken();
+        }
         if (server != null) {
             return;
         }

@@ -307,11 +307,16 @@ public final class WebviewServerConfig {
         Path path = configPath();
         try {
             if (!Files.isRegularFile(path)) {
+                // The pages are rescanned even so: they are served by default, so a
+                // server with no config file at all still has a web folder whose
+                // contents a reload is expected to pick up.
+                WebviewAssets.reload();
                 return "server.json not found — using current settings (path: " + path + ")";
             }
             String json = Files.readString(path, StandardCharsets.UTF_8);
             WebviewServerConfig read = GSON.fromJson(json, WebviewServerConfig.class);
             if (read == null) {
+                WebviewAssets.reload();
                 return "server.json is empty — using current settings";
             }
             instance = read;

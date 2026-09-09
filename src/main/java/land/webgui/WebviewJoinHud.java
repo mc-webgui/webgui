@@ -29,20 +29,7 @@ public final class WebviewJoinHud {
                         return;
                     }
 
-                    WebviewNetworking.sendTrustedOrigins(player, WebviewServerConfig.trustedCommandOriginsJoined());
-
-                    // Before any page URL: a page pointed at webgui:/ cannot resolve
-                    // anything until the client knows what the server ships.
-                    WebviewNetworking.sendAssetManifest(player);
-
-                    // Pushed now, not at death: the client has to know whether to
-                    // suppress the vanilla death screen the instant it is opened.
-                    WebviewNetworking.sendDeathScreen(player, WebviewServerConfig.deathScreenUrl(), "");
-
-                    String mainMenuUrl = WebviewServerConfig.mainMenuUrl();
-                    if (!mainMenuUrl.isEmpty()) {
-                        WebviewNetworking.sendMainMenuUrl(player, mainMenuUrl);
-                    }
+                    WebviewNetworking.sendConfigSnapshot(player);
 
                     if (!WebviewServerConfig.autoHudOnJoin()) {
                         return;
@@ -79,20 +66,7 @@ public final class WebviewJoinHud {
             return;
         }
 
-        WebviewNetworking.sendTrustedOrigins(player, WebviewServerConfig.trustedCommandOriginsJoined());
-
-        // Before any page URL: a page pointed at webgui:/ cannot resolve anything until
-        // the client knows what the server ships.
-        WebviewNetworking.sendAssetManifest(player);
-
-        // Pushed now, not at death: the client has to know whether to suppress the
-        // vanilla death screen the instant it is opened.
-        WebviewNetworking.sendDeathScreen(player, WebviewServerConfig.deathScreenUrl(), "");
-
-        String mainMenuUrl = WebviewServerConfig.mainMenuUrl();
-        if (!mainMenuUrl.isEmpty()) {
-            WebviewNetworking.sendMainMenuUrl(player, mainMenuUrl);
-        }
+        WebviewNetworking.sendConfigSnapshot(player);
 
         if (!WebviewServerConfig.autoHudOnJoin()) {
             return;

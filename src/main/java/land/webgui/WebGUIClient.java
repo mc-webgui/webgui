@@ -326,6 +326,11 @@ public final class WebGUIClient
      */
     private static void onAssetManifest(String revision, String manifest) {
         WebGUIAssetCache.useCacheDir(assetCacheDir());
+        // Kept from before the manifest is replaced: a second manifest in one session
+        // means the server reloaded, and only a different revision means the files
+        // actually moved. Empty is the first manifest of a session, where there is
+        // nothing open yet to refresh.
+        String previous = WebGUIAssetCache.revision();
         WebGUIAssetCache.setManifest(revision, manifest);
         if (WebGUIAssetCache.isEmpty()) {
             WebGUIAssetServer.invalidateSession();
@@ -336,6 +341,9 @@ public final class WebGUIClient
         // channel would leave the one place a server fully controls as the one place it
         // cannot use — and unlike a web host, nobody else can put a file there.
         WebGUITrustedOrigins.allowAlso(WebGUIAssetServer.origin());
+        if (!previous.isEmpty() && !previous.equals(WebGUIAssetCache.revision())) {
+            WebSession.reloadBundledPages();
+        }
     }
 
     /**

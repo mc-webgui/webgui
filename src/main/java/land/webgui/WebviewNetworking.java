@@ -372,6 +372,27 @@ public final class WebviewNetworking {
         //? }
     }
 
+
+    /**
+     * Sends a player every client-side copy of a server setting.
+     *
+     * One place, called both when a player joins and when {@code /webgui reload} runs.
+     * These values live on the client once pushed, and each one the reload path forgot to
+     * re-send was a setting that silently did not apply until the player reconnected —
+     * which is how an edited page kept showing its old self.
+     */
+    public static void sendConfigSnapshot(ServerPlayerEntity player) {
+        sendTrustedOrigins(player, WebviewServerConfig.trustedCommandOriginsJoined());
+        // Before any page URL: a page pointed at webgui:/ cannot resolve anything until
+        // the client knows what the server ships.
+        sendAssetManifest(player);
+        // Pushed ahead of the death itself: the client has to know whether to suppress
+        // the vanilla screen the instant it is opened.
+        sendDeathScreen(player, WebviewServerConfig.deathScreenUrl(), "");
+        // Empty included, so clearing mainMenuUrl reaches a player who was given one.
+        sendMainMenuUrl(player, WebviewServerConfig.mainMenuUrl());
+    }
+
     public static void sendTrustedOrigins(ServerPlayerEntity player, String origins) {
         String o = origins == null ? "" : origins;
         //? if >=1.20.5 {
@@ -432,6 +453,28 @@ public final class WebviewNetworking {
         String u = (url == null || url.isBlank()) ? "" : withPlayerToken(player, url);
         String info = (infoJson == null || infoJson.isBlank()) ? "" : sanitizeStr(infoJson, WebviewPayloads.MAX_EVENT_DATA_LENGTH);
         PacketDistributor.sendToPlayer(player, new WebviewPayloads.WebviewDeathS2CPayload(u, info));
+    }
+
+
+    // Sends a player every client-side copy of a server setting.
+    //
+    // One place, called both when a player joins and when /webgui reload runs. These
+    // values live on the client once pushed, and each one the reload path forgot to
+    // re-send was a setting that silently did not apply until the player reconnected —
+    // which is how an edited page kept showing its old self.
+    //
+    // Line comments, not a javadoc block: this whole branch is one commented-out region,
+    // and a nested end-of-comment marker would close it early.
+    public static void sendConfigSnapshot(ServerPlayer player) {
+        sendTrustedOrigins(player, WebviewServerConfig.trustedCommandOriginsJoined());
+        // Before any page URL: a page pointed at webgui:/ cannot resolve anything until
+        // the client knows what the server ships.
+        sendAssetManifest(player);
+        // Pushed ahead of the death itself: the client has to know whether to suppress
+        // the vanilla screen the instant it is opened.
+        sendDeathScreen(player, WebviewServerConfig.deathScreenUrl(), "");
+        // Empty included, so clearing mainMenuUrl reaches a player who was given one.
+        sendMainMenuUrl(player, WebviewServerConfig.mainMenuUrl());
     }
 
     public static void sendTrustedOrigins(ServerPlayer player, String origins) {
