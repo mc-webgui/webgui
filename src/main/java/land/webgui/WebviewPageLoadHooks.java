@@ -24,6 +24,11 @@ public final class WebviewPageLoadHooks {
                 RinkuBrowser active = WebSession.browser();
                 if (active == null || browser != active) return;
 
+                // Here rather than where the browser is created: the protocol needs a
+                // browser that exists natively, and the first load is the earliest point
+                // where that is certainly true.
+                WebGUIDevTools.attachOnce(active);
+
                 // Before the document's own scripts, not after them. Injecting only at
                 // load end meant a plain <script> touching window.webgui threw, because
                 // inline scripts run while the document is still parsing — so the very

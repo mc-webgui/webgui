@@ -30,6 +30,9 @@
     ],
     "client": [
       "land.webgui.WebGUIClient"
+    ],
+    "modmenu": [
+      "land.webgui.compat.ModMenuIntegration"
     ]
   },
   "mixins": [

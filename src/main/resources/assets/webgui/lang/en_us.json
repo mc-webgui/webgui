@@ -6,5 +6,11 @@
   "screen.webgui.url": "URL",
   "message.webgui.mcef_not_ready": "WebGUI is not ready yet. Wait for Chromium to finish loading or check the log.",
   "message.webgui.hud_interactive_on": "Web HUD: interactive mode (pseudo-GUI). Press the key again to exit.",
-  "message.webgui.hud_interactive_off": "Web HUD: view only. Press the interactive mode key to enable input."
+  "message.webgui.hud_interactive_off": "Web HUD: view only. Press the interactive mode key to enable input.",
+  "screen.webgui.settings.title": "WebGUI Settings",
+  "screen.webgui.settings.devtools": "Page developer tools",
+  "screen.webgui.settings.devtools.hint1": "Writes browser errors, failed requests and console output",
+  "screen.webgui.settings.devtools.hint2": "to the game log. For developing pages, not for playing.",
+  "screen.webgui.settings.inspector.on": "Chrome DevTools: open %s in a browser",
+  "screen.webgui.settings.inspector.off": "For the full inspector, add this launcher game argument:"
 }

@@ -179,6 +179,12 @@ public final class WebGUIAssetServer {
             WebGUIMod.LOGGER.debug("webgui: http request {}", raw);
             String token = sessionToken;
             String prefix = "/" + token + "/";
+            // Chromium asks the origin root for this on every page, unprompted. It is
+            // not a mistake in anyone's build, so it must not be reported as one.
+            if (raw.equals("/favicon.ico")) {
+                respond(exchange, 404, "text/plain; charset=utf-8", "No favicon".getBytes(StandardCharsets.UTF_8), null, false);
+                return;
+            }
             if (token.isEmpty() || !raw.startsWith(prefix)) {
                 // Either nothing is connected, or this is a stale page from the last
                 // server. Both are "not yours to read", and both are a 404 rather than a

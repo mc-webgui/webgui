@@ -61,6 +61,9 @@ if (sc_loader == "fabric") {
         modImplementation "net.fabricmc:fabric-loader:${loader_version}"
         modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
         include(modImplementation("maven.modrinth:rinku:${rinku_version}"))
+        // Compiled against, never shipped and never required: it is only needed to
+        // implement the entrypoint that puts a Config button in its list.
+        modCompileOnly("maven.modrinth:modmenu:${modmenu_version}")
     }
 } else {
     configurations {

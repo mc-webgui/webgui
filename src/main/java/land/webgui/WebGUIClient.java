@@ -135,6 +135,7 @@ public final class WebGUIClient
         });*/
         //? }
 
+        WebGUIClientConfig.load();
         WebGUIKeys.register();
         WebHudOverlay.register();
 
@@ -202,8 +203,15 @@ public final class WebGUIClient
 
         // Payload registration moved to common init (WebGUIMod) so the dedicated
         // server also registers the S2C channels — see issue #4.
+        WebGUIClientConfig.load();
         WebGUIKeys.register(modBus);
         WebHudOverlay.register();
+        // Puts a Config button on the mod's entry in NeoForge's own mod list. Looked up
+        // rather than taken from the constructor, so the mod's entry point keeps the
+        // signature it has.
+        net.neoforged.fml.ModList.get().getModContainerById(WebGUIMod.MOD_ID).ifPresent(container ->
+                container.registerExtensionPoint(net.neoforged.neoforge.client.gui.IConfigScreenFactory.class,
+                        (c, parent) -> new WebGUISettingsScreen(parent)));
         NeoForge.EVENT_BUS.addListener(WebGUIClient::onClientTick);
         NeoForge.EVENT_BUS.addListener(WebGUIClient::onLoggingOut);
         NeoForge.EVENT_BUS.addListener(WebGUIClient::onScreenOpening);
