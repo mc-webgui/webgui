@@ -227,7 +227,7 @@ public final class WebGUIAssetServer {
      * precede anything in the body.
      */
     private static byte[] withBridge(byte[] html) {
-        String script = "<script>" + WebviewScriptInject.bridgeSetup(base()) + "</script>";
+        String script = "<script>" + WebviewScriptInject.bridgeSetup(base(), WebSession.mode() == WebSession.Mode.HUD_OVERLAY) + "</script>";
         String document = new String(html, StandardCharsets.UTF_8);
 
         int head = indexOfIgnoreCase(document, "</head>");

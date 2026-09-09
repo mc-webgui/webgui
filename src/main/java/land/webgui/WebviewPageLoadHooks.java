@@ -98,7 +98,7 @@ public final class WebviewPageLoadHooks {
     private static void injectBridgeScript(RinkuBrowser browser) {
         try {
             String url = browser.getURL();
-            browser.executeJavaScript(WebviewScriptInject.bridgeSetup(WebGUIAssetServer.base()), url != null ? url : "", 0);
+            browser.executeJavaScript(WebviewScriptInject.bridgeSetup(WebGUIAssetServer.base(), WebSession.mode() == WebSession.Mode.HUD_OVERLAY), url != null ? url : "", 0);
         } catch (Throwable t) {
             WebGUIMod.LOGGER.debug("webgui bridge inject: {}", t.toString());
         }

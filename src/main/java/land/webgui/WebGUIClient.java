@@ -34,6 +34,8 @@ public final class WebGUIClient
             Rinku.getClient().addDisplayHandler(new WebviewBrowserConsoleLogger());
             WebviewPageToClientBridge.register();
             WebviewPageLoadHooks.register();
+            WebviewDownloadHandler.register();
+            WebviewFileDialogHandler.register();
             WebGUIMod.LOGGER.info("WebGUI bridge ready (console log, page↔game, client data).");
         });
 
@@ -195,6 +197,8 @@ public final class WebGUIClient
             Rinku.getClient().addDisplayHandler(new WebviewBrowserConsoleLogger());
             WebviewPageToClientBridge.register();
             WebviewPageLoadHooks.register();
+            WebviewDownloadHandler.register();
+            WebviewFileDialogHandler.register();
             WebGUIMod.LOGGER.info("WebGUI bridge ready (console log, page<->game, client data).");
         });
 

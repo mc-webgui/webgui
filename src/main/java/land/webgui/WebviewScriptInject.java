@@ -16,7 +16,7 @@ public final class WebviewScriptInject {
      * @param assetsBase where the server's own pages are served from, or empty when the
      *                   server ships none
      */
-    public static String bridgeSetup(String assetsBase) {
+    public static String bridgeSetup(String assetsBase, boolean hudMode) {
         // Encoded rather than interpolated: it is a URL built at runtime, and a quote in
         // it would turn this whole script into a syntax error at the worst moment.
         String base = GSON.toJson(assetsBase == null ? "" : assetsBase);
@@ -25,7 +25,11 @@ public final class WebviewScriptInject {
                   if (typeof window.webgui === 'undefined') window.webgui = {};
                   // Where this server's own files live, so a page can build a URL to one
                   // without knowing which port the local page server ended up on.
-                  window.webgui.assetsBase = %s;""".formatted(base) + """
+                  window.webgui.assetsBase = %s;
+                  // Whether this page is the HUD overlay rather than a full screen. A HUD
+                  // is sized for glanceable content, so a page worth writing for both
+                  // needs to know which one it is in.
+                  window.webgui.isHud = %s;""".formatted(base, hudMode) + """
 
                   if (typeof window.webgui.postToGame !== 'function') {
                     window.webgui.postToGame = function (payload) {
