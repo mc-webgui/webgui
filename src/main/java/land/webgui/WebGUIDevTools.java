@@ -8,17 +8,14 @@ import de.keksuccino.rinku.RinkuBrowser;
 import org.cef.browser.CefDevToolsClient;
 
 /**
- * Chromium's own view of a page, in the game log.
+ * Chromium's own view of a page, in the game log: failed requests with their status,
+ * uncaught exceptions with a stack, console calls with the line that made them.
  *
- * A page inside the game has no address bar and no inspector: the full DevTools window
- * needs {@code --remote-debugging-port}, which the browser library does not set and gives
- * no way to add, and {@code openDevTools()} needs a desktop window a game does not have.
- * The DevTools *protocol* needs neither, and it is where the browser keeps everything a
- * developer is missing — failed requests with their status, uncaught exceptions with a
- * stack, console calls with the line that made them.
+ * Over the DevTools protocol, which needs neither a window nor a debugging port -
+ * {@code openDevTools()} wants a desktop window a game does not have, and the inspector
+ * needs a port set on the command line before any mod runs.
  *
- * Attached per browser and only while the player has asked for it, because it is a
- * developer's tool and a chatty page would otherwise bury the log.
+ * Attached per browser, and only while the player has asked for it.
  */
 public final class WebGUIDevTools {
 
@@ -36,19 +33,15 @@ public final class WebGUIDevTools {
     /**
      * Turns the protocol on for one browser, once.
      *
-     * Called on every page load, because that is the earliest point where the browser
-     * certainly exists natively — but a browser navigates many times, and asking twice
-     * would double every line in the log.
-     *
-     * Safe to call always: with the setting off it does nothing at all, so no page pays
-     * for a feature nobody asked for.
+     * Called on every page load — the earliest point where the browser certainly exists
+     * natively — but attaching twice would double every line in the log. Does nothing
+     * with the setting off.
      */
     public static void attachOnce(RinkuBrowser browser) {
         if (browser == null || !WebGUIClientConfig.devTools()) {
             return;
         }
         synchronized (ATTACHED) {
-            // Identity, and weak: a browser is closed and forgotten without telling us.
             if (ATTACHED.containsKey(browser)) {
                 return;
             }
@@ -65,8 +58,7 @@ public final class WebGUIDevTools {
             return;
         }
         client.addEventListener(WebGUIDevTools::onEvent);
-        // Each domain has to be asked for before it says anything. Network is the one
-        // that answers "why is my page blank"; the other two carry errors and console.
+        // Each domain says nothing until it is asked for.
         for (String domain : new String[] {"Log.enable", "Runtime.enable", "Network.enable"}) {
             client.executeDevToolsMethod(domain);
         }
@@ -87,11 +79,11 @@ public final class WebGUIDevTools {
                 case "Log.entryAdded" -> logEntry(params);
                 case "Network.loadingFailed" -> loadingFailed(params);
                 case "Network.responseReceived" -> responseReceived(params);
-                default -> { /* The domains above are chatty enough. */ }
+                default -> { }
             }
         } catch (RuntimeException e) {
-            // The payload shape is Chromium's, not ours, and a surprise in it must not
-            // take down the callback that carries every other message.
+            // The payload shape is Chromium's; a surprise in one must not kill the
+            // callback that carries the rest.
             WebGUIMod.LOGGER.debug("webgui devtools: could not read {}: {}", method, e.toString());
         }
     }
@@ -154,8 +146,7 @@ public final class WebGUIDevTools {
     }
 
     private static void loadingFailed(JsonObject params) {
-        // Cancelled requests are ordinary — a page navigating away does it — so only a
-        // real error is worth a line.
+        // A page navigating away cancels requests; that is not a failure.
         if (params.has("canceled") && params.get("canceled").getAsBoolean()) {
             return;
         }
@@ -178,7 +169,6 @@ public final class WebGUIDevTools {
 
     // --- reading Chromium's json --------------------------------------------
 
-    /** A console argument as a person would want to read it. */
     private static String describe(JsonElement arg) {
         if (arg == null || !arg.isJsonObject()) {
             return String.valueOf(arg);
@@ -188,7 +178,6 @@ public final class WebGUIDevTools {
             JsonElement value = o.get("value");
             return value.isJsonPrimitive() ? value.getAsString() : value.toString();
         }
-        // An object or a DOM node: Chromium sends a rendered form for exactly this.
         String described = string(o, "description", "");
         if (!described.isEmpty()) {
             return described;
@@ -217,12 +206,7 @@ public final class WebGUIDevTools {
         return "";
     }
 
-    /**
-     * Drops the origin and session token from a served URL.
-     *
-     * The token is 32 characters of noise in front of every path, and it turns the one
-     * useful part of the line — which file — into something you have to hunt for.
-     */
+    /** Drops the origin and session token, leaving the part that says which file. */
     private static String shorten(String url) {
         String base = WebGUIAssetServer.base();
         if (!base.isEmpty() && url.startsWith(base + "/")) {

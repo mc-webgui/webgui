@@ -16,20 +16,14 @@ import java.nio.file.Path;
 /**
  * Settings that belong to the player, not the server.
  *
- * Separate from {@code server.json} because nothing here is a server's business: it is
- * what one person wants their own client to do. Written on change rather than on exit, so
- * a crash cannot lose the choice that may well have been made to diagnose that crash.
+ * Written on change rather than on exit: the choice here is often made to diagnose a
+ * crash, and a crash must not lose it.
  */
 public final class WebGUIClientConfig {
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
-    /**
-     * Forward what Chromium knows about the page into the game log.
-     *
-     * Off by default: it is a developer's tool, it makes the log noisier, and a player
-     * running someone else's pages has no use for it.
-     */
+    /** Off by default: a developer's tool, and it makes the log noisier. */
     private boolean devTools = false;
 
     private static WebGUIClientConfig instance = new WebGUIClientConfig();
@@ -55,8 +49,7 @@ public final class WebGUIClientConfig {
                 }
             }
         } catch (IOException | RuntimeException e) {
-            // A hand-edited file with a typo in it must not stop the game from starting;
-            // the defaults are all usable.
+            // A typo in a hand-edited file must not stop the game starting.
             WebGUIMod.LOGGER.warn("webgui: could not read {} - using defaults ({})", path, e.toString());
         }
     }

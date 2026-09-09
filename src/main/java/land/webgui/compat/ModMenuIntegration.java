@@ -6,11 +6,11 @@ import com.terraformersmc.modmenu.api.ModMenuApi;
 import land.webgui.WebGUISettingsScreen;
 
 /**
- * Puts a Config button on WebGUI's entry in Mod Menu's list.
+ * Puts a Config button on WebGUI's entry in Mod Menu's list, which is where a Fabric
+ * player looks for a mod's settings.
  *
- * Fabric has no mod list of its own, so this is where a Fabric player expects to find a
- * mod's settings. Mod Menu is compiled against but never required: without it nothing
- * reads this entrypoint and the class is simply never loaded.
+ * Compiled against Mod Menu, never requiring it: without it nothing reads this
+ * entrypoint and the class is never loaded.
  */
 public class ModMenuIntegration implements ModMenuApi {
     @Override

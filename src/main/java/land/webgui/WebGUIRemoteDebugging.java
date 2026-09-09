@@ -3,14 +3,11 @@ package land.webgui;
 /**
  * Whether the real Chrome DevTools can reach this client.
  *
- * The full inspector needs Chromium's remote debugging port. Nothing in the browser
- * library sets it and it cannot be turned on once the browser has started — but on
- * Windows CEF builds its command line from the process command line, and the game passes
- * arguments it does not recognise straight through. So a single launch argument,
- * {@code --remote-debugging-port=9222}, is enough, and this class reports whether someone
- * used it.
+ * CEF builds its command line from the process command line, and the game passes
+ * arguments it does not recognise straight through, so {@code --remote-debugging-port}
+ * on the game's own command line is enough to get the full inspector.
  *
- * Reported rather than set, because by the time any mod runs the command line is fixed.
+ * Reported rather than set: by the time any mod runs, that command line is fixed.
  */
 public final class WebGUIRemoteDebugging {
 
@@ -41,9 +38,7 @@ public final class WebGUIRemoteDebugging {
     }
 
     private static int findPort() {
-        // Two sources because neither is reliable alone: the launcher's arguments are in
-        // sun.java.command on every JVM that matters, while ProcessHandle can return
-        // nothing at all on Windows.
+        // Both sources: ProcessHandle returns nothing at all on some platforms.
         int fromCommand = parse(System.getProperty("sun.java.command", ""));
         if (fromCommand > 0) {
             return fromCommand;

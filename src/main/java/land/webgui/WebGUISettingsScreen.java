@@ -19,8 +19,8 @@ import net.minecraft.network.chat.Component;*/
 /**
  * The mod's own settings, reached from the game's mod list.
  *
- * Deliberately not a page in a browser: this is where a player goes when the browser is
- * the thing that is not working.
+ * Not a page in a browser: this is where a player goes when the browser is what is not
+ * working.
  */
 //? if fabric {
 public class WebGUISettingsScreen extends Screen {
@@ -105,9 +105,8 @@ public class WebGUISettingsScreen extends Screen {
         context.drawCenteredTextWithShadow(this.textRenderer,
                 Text.translatable("screen.webgui.settings.devtools.hint2"), centre, under + 12, 0xFFA0A0A0);
 
-        // The real inspector, which no setting here can turn on: it is a launch argument,
-        // fixed before any mod runs. Reporting it is the most this screen can do, and it
-        // is what turns "why can I not inspect this" into one line to copy.
+        // The real inspector is a launch argument, fixed before any mod runs; reporting
+        // it is the most this screen can do.
         int inspector = under + 34;
         boolean on = WebGUIRemoteDebugging.enabled();
         context.drawCenteredTextWithShadow(this.textRenderer,
@@ -140,9 +139,8 @@ public class WebGUISettingsScreen extends Screen {
         context.centeredText(this.font,
                 Component.translatable("screen.webgui.settings.devtools.hint2"), centre, under + 12, 0xFFA0A0A0);
 
-        // The real inspector, which no setting here can turn on: it is a launch argument,
-        // fixed before any mod runs. Reporting it is the most this screen can do, and it
-        // is what turns "why can I not inspect this" into one line to copy.
+        // The real inspector is a launch argument, fixed before any mod runs; reporting
+        // it is the most this screen can do.
         int inspector = under + 34;
         boolean on = WebGUIRemoteDebugging.enabled();
         context.centeredText(this.font,
@@ -167,9 +165,8 @@ public class WebGUISettingsScreen extends Screen {
         context.drawCenteredString(this.font,
                 Component.translatable("screen.webgui.settings.devtools.hint2"), centre, under + 12, 0xFFA0A0A0);
 
-        // The real inspector, which no setting here can turn on: it is a launch argument,
-        // fixed before any mod runs. Reporting it is the most this screen can do, and it
-        // is what turns "why can I not inspect this" into one line to copy.
+        // The real inspector is a launch argument, fixed before any mod runs; reporting
+        // it is the most this screen can do.
         int inspector = under + 34;
         boolean on = WebGUIRemoteDebugging.enabled();
         context.drawCenteredString(this.font,

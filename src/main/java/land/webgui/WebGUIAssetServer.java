@@ -16,19 +16,16 @@ import java.util.concurrent.Executors;
 /**
  * Hands the server's pages to the in-game browser over loopback.
  *
- * The browser has to read them from somewhere, and a plain HTTP origin is the only form
- * every web API treats as ordinary. A custom scheme would avoid the socket, but
- * non-standard schemes are second-class in Chromium — storage, fetch and service workers
- * all behave differently — and debugging that through a game window is miserable.
+ * A plain HTTP origin is the only form every web API treats as ordinary, so the files are
+ * served rather than handed over some scheme of our own.
  *
- * Bound to loopback only, so nothing is exposed to the network, and every URL carries a
- * per-session token: another process on the machine cannot enumerate what a server sent
- * us, and a page left over from a previous server cannot read the current one's files.
+ * Bound to loopback only, and every URL carries a per-session token: another process on
+ * the machine cannot enumerate what a server sent us, and a page left over from a
+ * previous server cannot read the current one's files.
  *
- * The port is fixed by default rather than random, because a page served from here has
- * origin {@code http://127.0.0.1:25580} — and a backend that wants to accept its API
- * calls has to name that origin in CORS. A port that moved every launch would make that
- * impossible to configure.
+ * The port is fixed rather than random because a backend accepting calls from these pages
+ * has to name {@code http://127.0.0.1:25580} in CORS, which a moving port would make
+ * impossible.
  */
 public final class WebGUIAssetServer {
 
@@ -48,12 +45,10 @@ public final class WebGUIAssetServer {
 
     private WebGUIAssetServer() {}
 
-    /** The origin pages are served from, or empty when the server is not running. */
     public static String origin() {
         return server == null ? "" : "http://" + LOOPBACK + ":" + port;
     }
 
-    /** The base a page prepends to a bundled path, with the session token. */
     public static String base() {
         return server == null ? "" : origin() + "/" + sessionToken;
     }
@@ -83,11 +78,9 @@ public final class WebGUIAssetServer {
         }
         for (int candidate = DEFAULT_PORT; candidate < DEFAULT_PORT + PORT_ATTEMPTS; candidate++) {
             try {
-                // Explicitly IPv4 loopback, not getLoopbackAddress(): on a machine with
-                // IPv6 that returns ::1, so the socket would listen on [::1] while every
-                // URL built below says 127.0.0.1. The port shows as listening and every
-                // connection to it is refused — which looked exactly like the mod's page
-                // server not working at all, on one loader and not the other.
+                // Explicitly IPv4, not getLoopbackAddress(): with IPv6 present that
+                // returns ::1, and the socket then listens on [::1] while every URL says
+                // 127.0.0.1 - listening, and refusing every connection.
                 HttpServer started = HttpServer.create(
                         new InetSocketAddress(InetAddress.getByName(LOOPBACK), candidate), 0);
                 started.createContext("/", WebGUIAssetServer::handle);
@@ -151,8 +144,8 @@ public final class WebGUIAssetServer {
             path = "index.html";
         }
         if (!running()) {
-            // Two very different causes, and blaming the wrong one sent an operator to
-            // check a config file that was fine.
+            // Two different causes; naming the wrong one sends an operator to a config
+            // file that is fine.
             if (WebGUIAssetCache.isEmpty()) {
                 WebGUIMod.LOGGER.warn("webgui: {} cannot be opened - this server ships no pages", url);
             } else {
@@ -179,8 +172,7 @@ public final class WebGUIAssetServer {
             WebGUIMod.LOGGER.debug("webgui: http request {}", raw);
             String token = sessionToken;
             String prefix = "/" + token + "/";
-            // Chromium asks the origin root for this on every page, unprompted. It is
-            // not a mistake in anyone's build, so it must not be reported as one.
+            // Chromium asks for this unprompted on every page; it is nobody's mistake.
             if (raw.equals("/favicon.ico")) {
                 respond(exchange, 404, "text/plain; charset=utf-8", "No favicon".getBytes(StandardCharsets.UTF_8), null, false);
                 return;
@@ -204,8 +196,8 @@ public final class WebGUIAssetServer {
 
             WebviewAssetStore.Asset asset = WebGUIAssetCache.lookup(path);
             if (asset == null) {
-                // Warned, not silent: before this, a page with one mistyped path came up
-                // blank with nothing anywhere to say which file was missing.
+                // Warned, not silent: one mistyped path otherwise means a blank page
+                // with nothing to explain it.
                 warnOnce(path, "webgui: {} is not in this server's pages - check the name and its case,"
                         + " and the server log for files skipped during the scan. Requested by: {}",
                         path, referrerOf(exchange));
@@ -238,22 +230,18 @@ public final class WebGUIAssetServer {
             }
             respond(exchange, 200, asset.contentType(), bytes, asset.sha256(), "HEAD".equals(method));
         } catch (Exception e) {
-            // Warn, not debug. This catch once swallowed the only evidence that bundled
-            // pages were failing outright on one loader, and the symptom above it was a
-            // blank screen with nothing in the log to explain it.
+            // Warn, not debug: the symptom on the other side of this catch is a blank
+            // screen, and nothing else would say why.
             WebGUIMod.LOGGER.warn("webgui: page request failed for {}: {}",
                     exchange.getRequestURI(), e.toString());
         }
     }
 
     /**
-     * Logs a miss the first time it is seen, and not again.
-     *
-     * A page that gets one path wrong usually gets thirty wrong the same way, and a wall
-     * of identical warnings is how the one line that matters gets lost.
+     * Logs a miss the first time it is seen, and not again: a build that gets one path
+     * wrong gets thirty wrong the same way.
      */
     private static void warnOnce(String key, String message, Object... args) {
-        // Bounded, because the keys come from whatever a page chose to request.
         if (WARNED.size() < 200 && WARNED.add(key)) {
             WebGUIMod.LOGGER.warn(message, args);
         }
