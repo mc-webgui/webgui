@@ -5,11 +5,13 @@ import land.webgui.WebviewNetworking;
 //? if fabric {
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 //? } else {
 /*import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.server.level.ServerPlayer;
@@ -73,7 +75,9 @@ public final class WebviewDeathListener {
         k.addProperty("name", attacker.getName().getString());
         k.addProperty("uuid", attacker.getUuid().toString());
         if (!isPlayer) {
-            k.addProperty("entityType", attacker.getType().toString());
+            // The registry id ("minecraft:zombie"), not EntityType.toString(),
+            // which yields the translation key and is awkward to match on.
+            k.addProperty("entityType", EntityType.getId(attacker.getType()).toString());
         }
         return k;
     }
@@ -123,7 +127,9 @@ public final class WebviewDeathListener {
         k.addProperty("name", attacker.getName().getString());
         k.addProperty("uuid", attacker.getStringUUID());
         if (!isPlayer) {
-            k.addProperty("entityType", attacker.getType().toString());
+            // The registry id ("minecraft:zombie"), not EntityType.toString(),
+            // which yields the translation key and is awkward to match on.
+            k.addProperty("entityType", EntityType.getKey(attacker.getType()).toString());
         }
         return k;
     }*/
