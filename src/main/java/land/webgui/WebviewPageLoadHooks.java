@@ -51,7 +51,7 @@ public final class WebviewPageLoadHooks {
                 // now that the document is up.
                 String death = WebGUIDeathScreen.info();
                 if (death != null && WebGUIDeathScreen.active()) {
-                    WebviewClientEmit.dispatch("death", death);
+                    WebviewClientEmit.dispatchDeath(death);
                 }
 
                 if (WebSession.mode() == WebSession.Mode.HUD_OVERLAY) {
