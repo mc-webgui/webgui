@@ -135,10 +135,26 @@ public final class WebviewClientBridge {
         look.addProperty("pitch", player.getPitch());
         o.add("look", look);
 
+        // The one camera value a page cannot work out for itself. Position and heading are
+        // above, and the viewport is window.innerWidth/innerHeight, but the field of view
+        // lives only in the player's own settings — and without it there is no way to turn
+        // a point in the world into a point on the screen.
+        //
+        // This is the setting, not the momentary value: the renderer stretches it while
+        // sprinting or under a speed effect, and reading that would mean hooking the
+        // camera every frame. A marker drawn from this drifts a little during a sprint and
+        // is exact when standing still.
+        o.addProperty("fov", fov(client));
+
         JsonObject server = buildServerInfo(client);
         if (server != null) o.add("server", server);
 
         return o;
+    }
+
+    /** Vertical field of view in degrees, as the player set it. */
+    private static int fov(MinecraftClient client) {
+        return client.options.getFov().getValue();
     }
 
     private static JsonObject buildServerInfo(MinecraftClient client) {
@@ -188,10 +204,19 @@ public final class WebviewClientBridge {
         look.addProperty("pitch", player.getXRot());
         o.add("look", look);
 
+        // The one camera value a page cannot work out for itself - see the note on the
+        // Fabric side of this method.
+        o.addProperty("fov", fov(client));
+
         JsonObject server = buildServerInfo(client);
         if (server != null) o.add("server", server);
 
         return o;
+    }
+
+    // Vertical field of view in degrees, as the player set it.
+    private static int fov(Minecraft client) {
+        return client.options.fov().get();
     }
 
     private static JsonObject buildServerInfo(Minecraft client) {
