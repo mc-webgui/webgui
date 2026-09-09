@@ -83,26 +83,4 @@ public final class WebviewDownloadNames {
         return directory.resolve(stem + "-" + System.currentTimeMillis() + extension);
     }
 
-    /**
-     * The page's accept list, as glob patterns a native file chooser understands.
-     *
-     * A page writes {@code accept=".png,image/png"}; the chooser wants {@code *.png}.
-     * MIME types have no glob to map to, so they are dropped rather than turned into a
-     * pattern that matches nothing — no patterns at all means "any file", which is the
-     * honest fallback when the page asked for something unexpressible.
-     */
-    public static java.util.List<String> globs(java.util.List<String> acceptFilters) {
-        java.util.List<String> globs = new java.util.ArrayList<>();
-        if (acceptFilters == null) {
-            return globs;
-        }
-        for (String filter : acceptFilters) {
-            String f = filter == null ? "" : filter.trim();
-            if (f.isEmpty() || f.contains("/")) {
-                continue;
-            }
-            globs.add(f.startsWith("*") ? f : (f.startsWith(".") ? "*" + f : "*." + f));
-        }
-        return globs;
-    }
 }

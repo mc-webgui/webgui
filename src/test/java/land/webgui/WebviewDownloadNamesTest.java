@@ -98,31 +98,4 @@ class WebviewDownloadNamesTest {
     void usesTheNameAsGivenWhenNothingIsThere(@TempDir Path dir) {
         assertEquals("fresh.txt", WebviewDownloadNames.free(dir, "fresh.txt").getFileName().toString());
     }
-
-    // --- the other direction: what a file chooser is told to show ------------
-
-    @Test
-    void turnsAcceptEntriesIntoGlobs() {
-        assertEquals(java.util.List.of("*.png", "*.jpg"),
-                WebviewDownloadNames.globs(java.util.List.of(".png", ".jpg")));
-        assertEquals(java.util.List.of("*.png"), WebviewDownloadNames.globs(java.util.List.of("png")));
-        assertEquals(java.util.List.of("*.png"), WebviewDownloadNames.globs(java.util.List.of("*.png")));
-    }
-
-    @Test
-    void dropsMimeTypesRatherThanInventingAPatternForThem() {
-        // "image/png" has no glob; a made-up one would match nothing and hide every file
-        // the player has, which reads as a broken upload rather than a wrong filter.
-        assertEquals(java.util.List.of(), WebviewDownloadNames.globs(java.util.List.of("image/png")));
-        assertEquals(java.util.List.of("*.png"),
-                WebviewDownloadNames.globs(java.util.List.of("image/png", ".png")));
-    }
-
-    @Test
-    void ignoresEmptyAndMissingAcceptEntries() {
-        assertEquals(java.util.List.of("*.txt"),
-                WebviewDownloadNames.globs(java.util.Arrays.asList("", "  ", null, ".txt")));
-        assertTrue(WebviewDownloadNames.globs(null).isEmpty());
-        assertTrue(WebviewDownloadNames.globs(java.util.List.of()).isEmpty());
-    }
 }

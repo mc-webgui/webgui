@@ -79,6 +79,43 @@ class WebGUIModMetadataTest {
         }
     }
 
+    /**
+     * The Mods list is where a player looks to see what they installed and who wrote it,
+     * and a declared icon that is not in the jar shows as a blank tile. Both loaders read
+     * these from different files, so it is easy to fix one and forget the other.
+     */
+    @Test
+    void declaresAuthorshipAndAnIconThatIsActuallyShipped() throws Exception {
+        String fabric = findOurs("fabric.mod.json", "land.webgui.WebGUIMod");
+        String neoforge = findOurs("META-INF/neoforge.mods.toml", "modId = \"" + MOD_ID + "\"");
+        Assumptions.assumeTrue(fabric != null || neoforge != null,
+                "our loader metadata is not exposed on the dev/test classpath — skipping");
+
+        if (fabric != null) {
+            assertContains(fabric, "KoSHeroff", "fabric.mod.json names the author");
+            assertContains(fabric, "icon-128.png", "declares a 128px icon");
+            assertContains(fabric, "https://webgui.space", "links to the homepage");
+        }
+        if (neoforge != null) {
+            assertContains(neoforge, "authors = \"KoSHeroff\"", "neoforge.mods.toml names the author");
+            assertContains(neoforge, "logoFile = \"icon-256.png\"", "declares a logo file");
+            assertContains(neoforge, "displayURL", "links to the homepage");
+            assertContains(neoforge, "issueTrackerURL", "links to the issue tracker");
+        }
+
+        for (String icon : new String[] { "/icon-128.png", "/icon-256.png" }) {
+            try (InputStream in = getClass().getResourceAsStream(icon)) {
+                assertNotNull(in, icon + " is declared in the metadata and must be in the jar");
+                byte[] header = in.readNBytes(8);
+                // A declared file that is not a PNG renders as a blank tile just the same.
+                assertTrue(header.length == 8
+                                && (header[0] & 0xFF) == 0x89 && header[1] == 'P'
+                                && header[2] == 'N' && header[3] == 'G',
+                        icon + " must be a PNG");
+            }
+        }
+    }
+
     @Test
     void mixinConfigIsPresentAndPointsAtTheMixinPackage() throws Exception {
         // webgui.mixins.json is uniquely named to this mod, so the root lookup is unambiguous.
