@@ -11,6 +11,9 @@
   - One thing to know: a bundled page is served from `http://127.0.0.1:25580`, not from your domain, so your API needs to allow that origin in CORS.
 - `window.webgui.assetsBase` — where the server's own files are served from, so a page can build a URL to one without knowing the port.
 - `serveBundledPages`, `bundledPagesDir` and `assetBytesPerSecond` in `config/webgui/server.json`.
+- **`client.fov`** — the vertical field of view in degrees. A page already knew where the player was and which way they faced, and could read its own viewport, but not this; without it there was no way to turn a point in the world into a point on the screen. It is the setting, not the momentary value — the game stretches it while sprinting or under a speed effect.
+- **`client.lookingAt`** — what the crosshair is on: `{type: "block", block, pos, face, distance}`, `{type: "entity", uuid, entityType, name, pos, distance}`, or `{type: "none"}`. This is the game's own answer, the one it uses for the block outline and the name above a mob, rather than a second ray cast with its own idea of reach. `type` is always there, so a page switches on it instead of testing for a field that comes and goes.
+- **A file can be downloaded from a page.** Files land in `webgui-downloads/` under the game directory and the player is told the name. Previously CEF asked the host where to put a download, heard nothing, and threw it away — so an invoice or a CSV export was simply unclickable.
 
 ### Fixed
 - **Fixed `window.webgui` being undefined while a page was still loading.** The bridge was injected only after the document finished, so a plain inline script calling it threw `Cannot read properties of undefined`; only pages that waited for `DOMContentLoaded` or later ever worked.
