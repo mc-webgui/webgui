@@ -5,8 +5,18 @@ on:
     branches: [main]
   # Manual trigger of the same tag-gated release (e.g. if a push didn't fire).
   # Still publishes ONLY when the version's tag doesn't exist yet — no new tag,
-  # no Modrinth publish.
+  # no Modrinth publish — unless force_publish says otherwise.
   workflow_dispatch:
+    inputs:
+      force_publish:
+        description: 'Publish this version again even though its tag exists (delete the bad versions on Modrinth first)'
+        type: boolean
+        default: false
+      only:
+        description: 'Which loader to publish. Use with force_publish to repair one without duplicating the other.'
+        type: choice
+        default: all
+        options: [all, fabric, neoforge]
 
 concurrency:
   group: release-main
@@ -33,16 +43,31 @@ jobs:
 
       # Release only when the version introduces a NEW tag. If the tag already
       # exists (version not bumped) nothing runs — in particular NOTHING is
-      # published to Modrinth. Same rule for push and workflow_dispatch.
+      # published to Modrinth. Same rule for push and workflow_dispatch, unless
+      # force_publish is set to repair a publish that went out wrong.
       - name: Decide actions
         id: check
         run: |
           if git ls-remote --tags origin "refs/tags/${{ steps.meta.outputs.tag }}" | grep -q .; then
-            echo "release=false" >> "$GITHUB_OUTPUT"
-            echo "Tag ${{ steps.meta.outputs.tag }} already exists — no new tag, skipping (no Modrinth publish)."
+            if [ "${{ inputs.force_publish }}" = "true" ]; then
+              echo "release=true" >> "$GITHUB_OUTPUT"
+              echo "tag=false" >> "$GITHUB_OUTPUT"
+              echo "Tag ${{ steps.meta.outputs.tag }} exists, but force_publish is set — publishing again without touching the tag."
+            else
+              echo "release=false" >> "$GITHUB_OUTPUT"
+              echo "Tag ${{ steps.meta.outputs.tag }} already exists — no new tag, skipping (no Modrinth publish)."
+            fi
           else
             echo "release=true" >> "$GITHUB_OUTPUT"
+            echo "tag=true" >> "$GITHUB_OUTPUT"
           fi
+
+          only='${{ inputs.only }}'
+          case "${only:-all}" in
+            fabric)   echo "fabric=true"  >> "$GITHUB_OUTPUT"; echo "neoforge=false" >> "$GITHUB_OUTPUT" ;;
+            neoforge) echo "fabric=false" >> "$GITHUB_OUTPUT"; echo "neoforge=true"  >> "$GITHUB_OUTPUT" ;;
+            *)        echo "fabric=true"  >> "$GITHUB_OUTPUT"; echo "neoforge=true"  >> "$GITHUB_OUTPUT" ;;
+          esac
 
       # Extract only the current version's section from CHANGELOG.md so each
       # Modrinth version shows its own notes rather than the whole file.
@@ -100,7 +125,7 @@ jobs:
       # BEFORE creating the git tag, so a failed upload doesn't leave a tag that
       # would make the whole release skip on re-run.
       - name: Publish 1.20.1 Fabric to Modrinth
-        if: steps.check.outputs.release == 'true'
+        if: steps.check.outputs.release == 'true' && steps.check.outputs.fabric == 'true'
         uses: Kir-Antipov/mc-publish@v3.3
         with:
           modrinth-id: tDw1xQja
@@ -112,11 +137,10 @@ jobs:
           loaders: fabric
           game-versions: '1.20.1'
           changelog: ${{ steps.notes.outputs.body }}
-          dependencies: rinku(embedded)
           files: versions/1.20.1-fabric/build/libs/!(*-@(dev|sources|javadoc)).jar
 
       - name: Publish 1.21.1 Fabric to Modrinth
-        if: steps.check.outputs.release == 'true'
+        if: steps.check.outputs.release == 'true' && steps.check.outputs.fabric == 'true'
         uses: Kir-Antipov/mc-publish@v3.3
         with:
           modrinth-id: tDw1xQja
@@ -128,11 +152,10 @@ jobs:
           loaders: fabric
           game-versions: '1.21.1'
           changelog: ${{ steps.notes.outputs.body }}
-          dependencies: rinku(embedded)
           files: versions/1.21.1-fabric/build/libs/!(*-@(dev|sources|javadoc)).jar
 
       - name: Publish 1.21.11 Fabric to Modrinth
-        if: steps.check.outputs.release == 'true'
+        if: steps.check.outputs.release == 'true' && steps.check.outputs.fabric == 'true'
         uses: Kir-Antipov/mc-publish@v3.3
         with:
           modrinth-id: tDw1xQja
@@ -144,11 +167,10 @@ jobs:
           loaders: fabric
           game-versions: '1.21.11'
           changelog: ${{ steps.notes.outputs.body }}
-          dependencies: rinku(embedded)
           files: versions/1.21.11-fabric/build/libs/!(*-@(dev|sources|javadoc)).jar
 
       - name: Publish 1.21.1 NeoForge to Modrinth
-        if: steps.check.outputs.release == 'true'
+        if: steps.check.outputs.release == 'true' && steps.check.outputs.neoforge == 'true'
         uses: Kir-Antipov/mc-publish@v3.3
         with:
           modrinth-id: tDw1xQja
@@ -164,7 +186,7 @@ jobs:
           files: versions/1.21.1-neoforge/build/libs/!(*-@(dev|sources|javadoc)).jar
 
       - name: Publish 1.21.11 NeoForge to Modrinth
-        if: steps.check.outputs.release == 'true'
+        if: steps.check.outputs.release == 'true' && steps.check.outputs.neoforge == 'true'
         uses: Kir-Antipov/mc-publish@v3.3
         with:
           modrinth-id: tDw1xQja
@@ -180,7 +202,7 @@ jobs:
           files: versions/1.21.11-neoforge/build/libs/!(*-@(dev|sources|javadoc)).jar
 
       - name: Publish 26.2 NeoForge to Modrinth
-        if: steps.check.outputs.release == 'true'
+        if: steps.check.outputs.release == 'true' && steps.check.outputs.neoforge == 'true'
         uses: Kir-Antipov/mc-publish@v3.3
         with:
           modrinth-id: tDw1xQja
@@ -196,7 +218,7 @@ jobs:
           files: versions/26.2-neoforge/build/libs/!(*-@(dev|sources|javadoc)).jar
 
       - name: Publish 26.1.2 NeoForge to Modrinth
-        if: steps.check.outputs.release == 'true'
+        if: steps.check.outputs.release == 'true' && steps.check.outputs.neoforge == 'true'
         uses: Kir-Antipov/mc-publish@v3.3
         with:
           modrinth-id: tDw1xQja
@@ -215,7 +237,7 @@ jobs:
       # repo variable is set, and never blocks the (gated) Modrinth release:
       # every step is continue-on-error.
       - name: Publish 1.20.1 Fabric to CurseForge
-        if: steps.check.outputs.release == 'true' && vars.CURSEFORGE_ID != ''
+        if: steps.check.outputs.release == 'true' && steps.check.outputs.fabric == 'true' && vars.CURSEFORGE_ID != ''
         continue-on-error: true
         uses: Kir-Antipov/mc-publish@v3.3
         with:
@@ -227,11 +249,10 @@ jobs:
           loaders: fabric
           game-versions: '1.20.1'
           changelog: ${{ steps.notes.outputs.body }}
-          dependencies: rinku(embedded)
           files: versions/1.20.1-fabric/build/libs/!(*-@(dev|sources|javadoc)).jar
 
       - name: Publish 1.21.1 Fabric to CurseForge
-        if: steps.check.outputs.release == 'true' && vars.CURSEFORGE_ID != ''
+        if: steps.check.outputs.release == 'true' && steps.check.outputs.fabric == 'true' && vars.CURSEFORGE_ID != ''
         continue-on-error: true
         uses: Kir-Antipov/mc-publish@v3.3
         with:
@@ -243,11 +264,10 @@ jobs:
           loaders: fabric
           game-versions: '1.21.1'
           changelog: ${{ steps.notes.outputs.body }}
-          dependencies: rinku(embedded)
           files: versions/1.21.1-fabric/build/libs/!(*-@(dev|sources|javadoc)).jar
 
       - name: Publish 1.21.11 Fabric to CurseForge
-        if: steps.check.outputs.release == 'true' && vars.CURSEFORGE_ID != ''
+        if: steps.check.outputs.release == 'true' && steps.check.outputs.fabric == 'true' && vars.CURSEFORGE_ID != ''
         continue-on-error: true
         uses: Kir-Antipov/mc-publish@v3.3
         with:
@@ -259,11 +279,10 @@ jobs:
           loaders: fabric
           game-versions: '1.21.11'
           changelog: ${{ steps.notes.outputs.body }}
-          dependencies: rinku(embedded)
           files: versions/1.21.11-fabric/build/libs/!(*-@(dev|sources|javadoc)).jar
 
       - name: Publish 1.21.1 NeoForge to CurseForge
-        if: steps.check.outputs.release == 'true' && vars.CURSEFORGE_ID != ''
+        if: steps.check.outputs.release == 'true' && steps.check.outputs.neoforge == 'true' && vars.CURSEFORGE_ID != ''
         continue-on-error: true
         uses: Kir-Antipov/mc-publish@v3.3
         with:
@@ -279,7 +298,7 @@ jobs:
           files: versions/1.21.1-neoforge/build/libs/!(*-@(dev|sources|javadoc)).jar
 
       - name: Publish 1.21.11 NeoForge to CurseForge
-        if: steps.check.outputs.release == 'true' && vars.CURSEFORGE_ID != ''
+        if: steps.check.outputs.release == 'true' && steps.check.outputs.neoforge == 'true' && vars.CURSEFORGE_ID != ''
         continue-on-error: true
         uses: Kir-Antipov/mc-publish@v3.3
         with:
@@ -295,7 +314,7 @@ jobs:
           files: versions/1.21.11-neoforge/build/libs/!(*-@(dev|sources|javadoc)).jar
 
       - name: Publish 26.2 NeoForge to CurseForge
-        if: steps.check.outputs.release == 'true' && vars.CURSEFORGE_ID != ''
+        if: steps.check.outputs.release == 'true' && steps.check.outputs.neoforge == 'true' && vars.CURSEFORGE_ID != ''
         continue-on-error: true
         uses: Kir-Antipov/mc-publish@v3.3
         with:
@@ -311,7 +330,7 @@ jobs:
           files: versions/26.2-neoforge/build/libs/!(*-@(dev|sources|javadoc)).jar
 
       - name: Publish 26.1.2 NeoForge to CurseForge
-        if: steps.check.outputs.release == 'true' && vars.CURSEFORGE_ID != ''
+        if: steps.check.outputs.release == 'true' && steps.check.outputs.neoforge == 'true' && vars.CURSEFORGE_ID != ''
         continue-on-error: true
         uses: Kir-Antipov/mc-publish@v3.3
         with:
@@ -329,29 +348,18 @@ jobs:
       # mc-publish can report success without actually creating a version (e.g.
       # a token lacking the "Create versions" scope). Confirm every version is
       # really on Modrinth so a green run can't lie.
+      # Names alone are not enough: a version can be created with the file, the
+      # loader or the game version missing, and the API still lists it. That is
+      # exactly what happened once, and the release was tagged over it.
       - name: Verify Modrinth versions
         if: steps.check.outputs.release == 'true'
         run: |
-          sleep 8
-          v='${{ steps.meta.outputs.version }}'
-          expected="${v}+mc1.20.1-fabric ${v}+mc1.21.1-fabric ${v}+mc1.21.11-fabric ${v}+mc1.21.1-neoforge ${v}+mc1.21.11-neoforge ${v}+mc26.1.2-neoforge ${v}+mc26.2-neoforge"
-          published=$(curl -s "https://api.modrinth.com/v2/project/tDw1xQja/version?cb=${{ github.run_id }}" \
-            | python3 -c "import sys,json; print('\n'.join(x['version_number'] for x in json.load(sys.stdin)))")
-          fail=0
-          for e in $expected; do
-            if printf '%s\n' "$published" | grep -qxF "$e"; then
-              echo "ok: $e"
-            else
-              echo "MISSING on Modrinth: $e"; fail=1
-            fi
-          done
-          if [ "$fail" != "0" ]; then
-            echo "::error::Modrinth publish reported success but versions are missing — check that MODRINTH_TOKEN has the 'Create versions' scope."
-            exit 1
-          fi
+          sleep 15
+          curl -s "https://api.modrinth.com/v2/project/tDw1xQja/version?cb=${{ github.run_id }}" > versions.json
+          python3 .github/scripts/verify-modrinth.py '${{ steps.meta.outputs.version }}' versions.json
 
       - name: Create GitHub Release
-        if: steps.check.outputs.release == 'true'
+        if: steps.check.outputs.release == 'true' && steps.check.outputs.tag == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.meta.outputs.tag }}
