@@ -62,6 +62,11 @@ public final class WebGUIAssetCache {
         return MANIFEST.isEmpty();
     }
 
+    /** How many files this server said it ships. */
+    public static int size() {
+        return MANIFEST.size();
+    }
+
     public static String revision() {
         return revision;
     }

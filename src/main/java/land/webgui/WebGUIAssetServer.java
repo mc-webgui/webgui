@@ -43,6 +43,8 @@ public final class WebGUIAssetServer {
     private static HttpServer server;
     private static int port;
     private static String sessionToken = "";
+    /** Paths already reported as missing, so one broken build logs each name once. */
+    private static final java.util.Set<String> WARNED = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     private WebGUIAssetServer() {}
 
@@ -112,6 +114,7 @@ public final class WebGUIAssetServer {
     /** Called on disconnect: the previous server's token must stop working immediately. */
     public static synchronized void invalidateSession() {
         sessionToken = "";
+        WARNED.clear();
     }
 
     private static void rotateToken() {
@@ -148,7 +151,15 @@ public final class WebGUIAssetServer {
             path = "index.html";
         }
         if (!running()) {
-            WebGUIMod.LOGGER.warn("webgui: {} cannot be opened - this server ships no pages", url);
+            // Two very different causes, and blaming the wrong one sent an operator to
+            // check a config file that was fine.
+            if (WebGUIAssetCache.isEmpty()) {
+                WebGUIMod.LOGGER.warn("webgui: {} cannot be opened - this server ships no pages", url);
+            } else {
+                WebGUIMod.LOGGER.warn("webgui: {} cannot be opened - the server sent {} page file(s), but no local"
+                        + " port in {}..{} was free to serve them from", url, WebGUIAssetCache.size(),
+                        DEFAULT_PORT, DEFAULT_PORT + PORT_ATTEMPTS - 1);
+            }
             return trimmed;
         }
         return base() + "/" + path + query;
@@ -172,6 +183,10 @@ public final class WebGUIAssetServer {
                 // Either nothing is connected, or this is a stale page from the last
                 // server. Both are "not yours to read", and both are a 404 rather than a
                 // 403 so nothing here confirms what does exist.
+                warnOnce(raw, "webgui: page asset {} was requested without this session's prefix, so it cannot be served."
+                        + " A build that emits absolute paths like /assets/app.js does this - rebuild it with a"
+                        + " relative base (Vite base: './', CRA homepage: '.'). Requested by: {}",
+                        raw, referrerOf(exchange));
                 respond(exchange, 404, "text/plain; charset=utf-8", "Not found".getBytes(StandardCharsets.UTF_8), null, false);
                 return;
             }
@@ -183,6 +198,11 @@ public final class WebGUIAssetServer {
 
             WebviewAssetStore.Asset asset = WebGUIAssetCache.lookup(path);
             if (asset == null) {
+                // Warned, not silent: before this, a page with one mistyped path came up
+                // blank with nothing anywhere to say which file was missing.
+                warnOnce(path, "webgui: {} is not in this server's pages - check the name and its case,"
+                        + " and the server log for files skipped during the scan. Requested by: {}",
+                        path, referrerOf(exchange));
                 respond(exchange, 404, "text/plain; charset=utf-8",
                         ("Not in this server's pages: " + path).getBytes(StandardCharsets.UTF_8), null, false);
                 return;
@@ -218,6 +238,24 @@ public final class WebGUIAssetServer {
             WebGUIMod.LOGGER.warn("webgui: page request failed for {}: {}",
                     exchange.getRequestURI(), e.toString());
         }
+    }
+
+    /**
+     * Logs a miss the first time it is seen, and not again.
+     *
+     * A page that gets one path wrong usually gets thirty wrong the same way, and a wall
+     * of identical warnings is how the one line that matters gets lost.
+     */
+    private static void warnOnce(String key, String message, Object... args) {
+        // Bounded, because the keys come from whatever a page chose to request.
+        if (WARNED.size() < 200 && WARNED.add(key)) {
+            WebGUIMod.LOGGER.warn(message, args);
+        }
+    }
+
+    private static String referrerOf(HttpExchange exchange) {
+        String referrer = exchange.getRequestHeaders().getFirst("Referer");
+        return referrer == null || referrer.isBlank() ? "(no referrer)" : referrer;
     }
 
     /**
