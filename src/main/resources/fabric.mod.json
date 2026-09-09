@@ -3,15 +3,20 @@
   "id": "webgui",
   "version": "${version}",
   "name": "WebGUI",
-  "description": "Embed any web page (React, Vue, plain HTML) as a full-screen GUI or transparent HUD overlay inside Minecraft. Powered by MCEF (Chromium).",
+  "description": "Embed any web page (React, Vue, plain HTML) as a full-screen GUI or transparent HUD overlay inside Minecraft. Powered by Rinku (Chromium).",
   "authors": [
-    "kosher"
+    "KoSHeroff"
   ],
   "contact": {
+    "homepage": "https://webgui.space",
     "sources": "https://github.com/mc-webgui/webgui",
     "issues": "https://github.com/mc-webgui/webgui/issues"
   },
   "license": "MIT",
+  "icon": {
+    "128": "icon-128.png",
+    "256": "icon-256.png"
+  },
   "environment": "*",
   "depends": {
     "fabricloader": ">=0.18.0",
@@ -25,9 +30,13 @@
     ],
     "client": [
       "land.webgui.WebGUIClient"
+    ],
+    "modmenu": [
+      "land.webgui.compat.ModMenuIntegration"
     ]
   },
   "mixins": [
-    "webgui.mixins.json"
+    "webgui.mixins.json",
+    "webgui.fabric.mixins.json"
   ]
 }

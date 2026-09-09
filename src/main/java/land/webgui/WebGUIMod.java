@@ -36,6 +36,7 @@ public final class WebGUIMod
         ServerLifecycleEvents.SERVER_STARTING.register(server -> {
             WebviewServerConfig.load();
             EntityBindingStore.load();
+            land.webgui.server.WebviewAssets.reload();
         });
         EntityInteractionListener.register();
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
@@ -43,6 +44,7 @@ public final class WebGUIMod
         });
         WebviewCommands.register();
         WebviewJoinHud.register();
+        land.webgui.server.WebviewDeathListener.register();
         LOGGER.info("WebGUI common init (S2C payloads, commands).");
     }
     //? } else {
@@ -53,6 +55,7 @@ public final class WebGUIMod
         EntityInteractionListener.register();
         WebviewCommands.register();
         WebviewJoinHud.register();
+        land.webgui.server.WebviewDeathListener.register();
         NeoForge.EVENT_BUS.addListener(this::onServerStarting);
         NeoForge.EVENT_BUS.addListener(this::onServerStarted);
         //? if >=1.21.5 {
@@ -69,6 +72,7 @@ public final class WebGUIMod
     private void onServerStarting(ServerStartingEvent event) {
         WebviewServerConfig.load();
         EntityBindingStore.load();
+        land.webgui.server.WebviewAssets.reload();
     }
 
     private void onServerStarted(ServerStartedEvent event) {

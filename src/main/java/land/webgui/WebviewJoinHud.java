@@ -23,12 +23,13 @@ public final class WebviewJoinHud {
                         return;
                     }
 
-                    WebviewNetworking.sendTrustedOrigins(player, WebviewServerConfig.trustedCommandOriginsJoined());
-
-                    String mainMenuUrl = WebviewServerConfig.mainMenuUrl();
-                    if (!mainMenuUrl.isEmpty()) {
-                        WebviewNetworking.sendMainMenuUrl(player, mainMenuUrl);
+                    // First: everything below is pointless for a client that cannot receive it,
+                    // and this is also where such a client is told so.
+                    if (!land.webgui.server.WebviewClientCheck.onJoin(player)) {
+                        return;
                     }
+
+                    WebviewNetworking.sendConfigSnapshot(player);
 
                     if (!WebviewServerConfig.autoHudOnJoin()) {
                         return;
@@ -42,21 +43,30 @@ public final class WebviewJoinHud {
                     WebviewNetworking.openHud(player, url);
                     WebGUIMod.LOGGER.info("webgui: auto HUD for {} → {}", player.getName().getString(), url);
                 });
+
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+            if (handler.player != null) {
+                land.webgui.server.WebviewRateLimiter.forget(handler.player.getUuid());
+            }
+        });
     }
     //? } else {
     /*public static void register() {
         NeoForge.EVENT_BUS.addListener(WebviewJoinHud::onPlayerJoin);
+        NeoForge.EVENT_BUS.addListener((PlayerEvent.PlayerLoggedOutEvent event) ->
+                land.webgui.server.WebviewRateLimiter.forget(event.getEntity().getUUID()));
     }
 
     private static void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
         ServerPlayer player = (ServerPlayer) event.getEntity();
 
-        WebviewNetworking.sendTrustedOrigins(player, WebviewServerConfig.trustedCommandOriginsJoined());
-
-        String mainMenuUrl = WebviewServerConfig.mainMenuUrl();
-        if (!mainMenuUrl.isEmpty()) {
-            WebviewNetworking.sendMainMenuUrl(player, mainMenuUrl);
+        // First: everything below is pointless for a client that cannot receive it, and
+        // this is also where such a client is told so.
+        if (!land.webgui.server.WebviewClientCheck.onJoin(player)) {
+            return;
         }
+
+        WebviewNetworking.sendConfigSnapshot(player);
 
         if (!WebviewServerConfig.autoHudOnJoin()) {
             return;

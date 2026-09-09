@@ -78,7 +78,7 @@ public final class WebSession {
         } else {
             closeActiveBrowser();
         }
-        browser = Rinku.createBrowser(url, true);
+        browser = Rinku.createBrowser(WebGUIAssetServer.resolve(url), true);
         mode = Mode.GUI_SCREEN;
         WebviewClientBridge.clearCache();
         return browser;
@@ -87,15 +87,45 @@ public final class WebSession {
     public static RinkuBrowser openForHud(String url) {
         closeSuspendedHudBrowser();
         if (mode == Mode.HUD_OVERLAY && browser != null) {
-            browser.loadURL(url);
+            browser.loadURL(WebGUIAssetServer.resolve(url));
             WebviewClientBridge.clearCache();
             return browser;
         }
         closeActiveBrowser();
-        browser = Rinku.createBrowser(url, true);
+        browser = Rinku.createBrowser(WebGUIAssetServer.resolve(url), true);
         mode = Mode.HUD_OVERLAY;
         WebviewClientBridge.clearCache();
         return browser;
+    }
+
+    /**
+     * Refreshes any open page that came from the server's own files.
+     *
+     * The address does not change across a reload, only the bytes behind it, so nothing
+     * would make the browser ask again on its own. A page from a web host is left alone.
+     */
+    public static void reloadBundledPages() {
+        String origin = WebGUIAssetServer.origin();
+        if (origin.isEmpty()) {
+            return;
+        }
+        boolean any = reloadIfBundled(browser, origin) | reloadIfBundled(suspendedHudBrowser, origin);
+        if (any) {
+            // The bridge only pushes what changed, and a reloaded page has nothing.
+            WebviewClientBridge.clearCache();
+        }
+    }
+
+    private static boolean reloadIfBundled(RinkuBrowser target, String origin) {
+        if (target == null) {
+            return false;
+        }
+        String url = target.getURL();
+        if (url == null || !url.startsWith(origin)) {
+            return false;
+        }
+        target.reload();
+        return true;
     }
 
     public static void closeHudOnly() {

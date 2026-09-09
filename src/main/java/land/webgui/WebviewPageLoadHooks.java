@@ -23,6 +23,21 @@ public final class WebviewPageLoadHooks {
                                     org.cef.network.CefRequest.TransitionType transitionType) {
                 RinkuBrowser active = WebSession.browser();
                 if (active == null || browser != active) return;
+
+                // Here rather than where the browser is created: the protocol needs a
+                // browser that exists natively, and the first load is the earliest point
+                // where that is certainly true.
+                WebGUIDevTools.attachOnce(active);
+
+                // Before the document's own scripts, not after them. Injecting only at
+                // load end meant a plain <script> touching window.webgui threw, because
+                // inline scripts run while the document is still parsing — so the very
+                // first thing anyone writes on their first page failed with
+                // "Cannot read properties of undefined". It is injected again at load
+                // end; the script is written to be idempotent, and a page that replaces
+                // its own document would otherwise lose the bridge.
+                injectBridgeScript(active);
+
                 if (WebSession.mode() == WebSession.Mode.HUD_OVERLAY) {
                     WebHudOverlay.onHudBrowserLoadStart(active);
                 } else if (WebSession.mode() == WebSession.Mode.GUI_SCREEN) {
@@ -46,6 +61,14 @@ public final class WebviewPageLoadHooks {
                     mc.execute(() -> WebviewClientBridge.pushAfterDocumentLoad(mc));
                 }
 
+                // The death payload lands while this page is still being created, so
+                // an immediate emit would arrive before any listener exists. Replay it
+                // now that the document is up.
+                String death = WebGUIDeathScreen.info();
+                if (death != null && WebGUIDeathScreen.active()) {
+                    WebviewClientEmit.dispatchDeath(death);
+                }
+
                 if (WebSession.mode() == WebSession.Mode.HUD_OVERLAY) {
                     WebHudOverlay.onHudBrowserLoadFinished(active);
                 } else if (WebSession.mode() == WebSession.Mode.GUI_SCREEN) {
@@ -59,6 +82,15 @@ public final class WebviewPageLoadHooks {
                                     String errorText, String failedUrl) {
                 RinkuBrowser active = WebSession.browser();
                 if (active == null || browser != active) return;
+
+                // A death page that will not load would otherwise leave the player
+                // staring at nothing with no way to respawn, so let Escape out.
+                if (WebGUIDeathScreen.active()) {
+                    WebGUIDeathScreen.setLoadFailed(true);
+                    WebGUIMod.LOGGER.warn("webgui: death page failed to load ({}): {} — Escape will respawn instead",
+                            errorText, failedUrl);
+                }
+
                 if (WebSession.mode() == WebSession.Mode.HUD_OVERLAY) {
                     WebHudOverlay.onHudBrowserLoadFinished(active);
                 } else if (WebSession.mode() == WebSession.Mode.GUI_SCREEN) {
@@ -71,7 +103,7 @@ public final class WebviewPageLoadHooks {
     private static void injectBridgeScript(RinkuBrowser browser) {
         try {
             String url = browser.getURL();
-            browser.executeJavaScript(WebviewScriptInject.bridgeSetup(), url != null ? url : "", 0);
+            browser.executeJavaScript(WebviewScriptInject.bridgeSetup(WebGUIAssetServer.base(), WebSession.mode() == WebSession.Mode.HUD_OVERLAY), url != null ? url : "", 0);
         } catch (Throwable t) {
             WebGUIMod.LOGGER.debug("webgui bridge inject: {}", t.toString());
         }

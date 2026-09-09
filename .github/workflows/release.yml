@@ -112,6 +112,7 @@ jobs:
           loaders: fabric
           game-versions: '1.20.1'
           changelog: ${{ steps.notes.outputs.body }}
+          dependencies: rinku(embedded)
           files: versions/1.20.1-fabric/build/libs/!(*-@(dev|sources|javadoc)).jar
 
       - name: Publish 1.21.1 Fabric to Modrinth
@@ -127,6 +128,7 @@ jobs:
           loaders: fabric
           game-versions: '1.21.1'
           changelog: ${{ steps.notes.outputs.body }}
+          dependencies: rinku(embedded)
           files: versions/1.21.1-fabric/build/libs/!(*-@(dev|sources|javadoc)).jar
 
       - name: Publish 1.21.11 Fabric to Modrinth
@@ -142,6 +144,7 @@ jobs:
           loaders: fabric
           game-versions: '1.21.11'
           changelog: ${{ steps.notes.outputs.body }}
+          dependencies: rinku(embedded)
           files: versions/1.21.11-fabric/build/libs/!(*-@(dev|sources|javadoc)).jar
 
       - name: Publish 1.21.1 NeoForge to Modrinth
@@ -224,6 +227,7 @@ jobs:
           loaders: fabric
           game-versions: '1.20.1'
           changelog: ${{ steps.notes.outputs.body }}
+          dependencies: rinku(embedded)
           files: versions/1.20.1-fabric/build/libs/!(*-@(dev|sources|javadoc)).jar
 
       - name: Publish 1.21.1 Fabric to CurseForge
@@ -239,6 +243,7 @@ jobs:
           loaders: fabric
           game-versions: '1.21.1'
           changelog: ${{ steps.notes.outputs.body }}
+          dependencies: rinku(embedded)
           files: versions/1.21.1-fabric/build/libs/!(*-@(dev|sources|javadoc)).jar
 
       - name: Publish 1.21.11 Fabric to CurseForge
@@ -254,6 +259,7 @@ jobs:
           loaders: fabric
           game-versions: '1.21.11'
           changelog: ${{ steps.notes.outputs.body }}
+          dependencies: rinku(embedded)
           files: versions/1.21.11-fabric/build/libs/!(*-@(dev|sources|javadoc)).jar
 
       - name: Publish 1.21.1 NeoForge to CurseForge
@@ -269,6 +275,7 @@ jobs:
           loaders: neoforge
           game-versions: '1.21.1'
           changelog: ${{ steps.notes.outputs.body }}
+          dependencies: rinku(required)
           files: versions/1.21.1-neoforge/build/libs/!(*-@(dev|sources|javadoc)).jar
 
       - name: Publish 1.21.11 NeoForge to CurseForge
@@ -284,6 +291,7 @@ jobs:
           loaders: neoforge
           game-versions: '1.21.11'
           changelog: ${{ steps.notes.outputs.body }}
+          dependencies: rinku(required)
           files: versions/1.21.11-neoforge/build/libs/!(*-@(dev|sources|javadoc)).jar
 
       - name: Publish 26.2 NeoForge to CurseForge
@@ -299,6 +307,7 @@ jobs:
           loaders: neoforge
           game-versions: '26.2'
           changelog: ${{ steps.notes.outputs.body }}
+          dependencies: rinku(required)
           files: versions/26.2-neoforge/build/libs/!(*-@(dev|sources|javadoc)).jar
 
       - name: Publish 26.1.2 NeoForge to CurseForge
@@ -314,6 +323,7 @@ jobs:
           loaders: neoforge
           game-versions: '26.1.2'
           changelog: ${{ steps.notes.outputs.body }}
+          dependencies: rinku(required)
           files: versions/26.1.2-neoforge/build/libs/!(*-@(dev|sources|javadoc)).jar
 
       # mc-publish can report success without actually creating a version (e.g.

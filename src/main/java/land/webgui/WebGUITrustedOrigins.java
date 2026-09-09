@@ -28,6 +28,23 @@ public final class WebGUITrustedOrigins {
         origins = next;
     }
 
+    /**
+     * Adds one more origin to the set the server sent.
+     *
+     * Used for the pages the server ships itself, which are served from loopback and so
+     * have an origin the server cannot know in advance. Nobody but that server can put a
+     * file there, so trusting it is no wider than trusting the list it just sent.
+     */
+    public static void allowAlso(String url) {
+        String o = normalize(url);
+        if (o == null) {
+            return;
+        }
+        Set<String> next = new HashSet<>(origins);
+        next.add(o);
+        origins = next;
+    }
+
     public static void clear() {
         origins = Collections.emptySet();
     }

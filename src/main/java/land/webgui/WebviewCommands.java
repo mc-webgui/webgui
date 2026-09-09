@@ -131,6 +131,11 @@ public final class WebviewCommands {
                                         .executes(ctx -> {
                                             String msg = WebviewServerConfig.reload();
                                             EntityBindingStore.load();
+                                            // Every setting the client holds a copy of has to be
+                                            // pushed again, or online players keep the old one.
+                                            for (ServerPlayerEntity p : ctx.getSource().getServer().getPlayerManager().getPlayerList()) {
+                                                WebviewNetworking.sendConfigSnapshot(p);
+                                            }
                                             ctx.getSource().sendFeedback(() -> Text.literal(msg), true);
                                             return 1;
                                         }))
@@ -199,6 +204,11 @@ public final class WebviewCommands {
                                 .executes(ctx -> {
                                     String msg = WebviewServerConfig.reload();
                                     EntityBindingStore.load();
+                                    // Every setting the client holds a copy of has to be pushed
+                                    // again, or online players keep the old one.
+                                    for (ServerPlayer p : ctx.getSource().getServer().getPlayerList().getPlayers()) {
+                                        WebviewNetworking.sendConfigSnapshot(p);
+                                    }
                                     ctx.getSource().sendSuccess(() -> Component.literal(msg), true);
                                     return 1;
                                 }))

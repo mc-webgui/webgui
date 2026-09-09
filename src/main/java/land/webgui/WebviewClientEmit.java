@@ -30,6 +30,28 @@ public final class WebviewClientEmit {
         if (hud != null && hud != main) executeJs(hud, js);
     }
 
+    /**
+     * Emits the death payload and leaves it on {@code window.webgui.death}.
+     *
+     * The event fires once, right after the document loads, so a bundle that only starts
+     * subscribing from a component would miss it entirely. The snapshot gives such code
+     * something to read, exactly as {@code window.webgui.client} and {@code .entity} do.
+     */
+    public static void dispatchDeath(String jsonPayload) {
+        RinkuBrowser main = WebSession.browser();
+        if (main == null) return;
+        String data = (jsonPayload == null || jsonPayload.isBlank()) ? "null" : jsonPayload;
+        String js = "(function(){"
+                + "var d=" + data + ";"
+                + "if(typeof window.webgui==='undefined')window.webgui={};"
+                + "window.webgui.death=d;"
+                + "window.dispatchEvent(new CustomEvent('webgui:death',{detail:d}));"
+                + "if(window.webgui._hs&&window.webgui._hs['death'])"
+                + "{window.webgui._hs['death'].forEach(function(e){try{e.w({detail:d});}catch(x){}});}"
+                + "})();";
+        executeJs(main, js);
+    }
+
     private static void executeJs(RinkuBrowser browser, String js) {
         try {
             String url = browser.getURL();
