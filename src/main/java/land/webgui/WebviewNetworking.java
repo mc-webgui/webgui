@@ -49,7 +49,10 @@ public final class WebviewNetworking {
         PayloadTypeRegistry.playS2C().register(WebviewPayloads.WebviewTrustedOriginsS2CPayload.ID, WebviewPayloads.WebviewTrustedOriginsS2CPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(WebviewPayloads.WebviewDeathS2CPayload.ID, WebviewPayloads.WebviewDeathS2CPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(WebviewPayloads.WebviewHelloS2CPayload.ID, WebviewPayloads.WebviewHelloS2CPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(WebviewPayloads.WebviewAssetManifestS2CPayload.ID, WebviewPayloads.WebviewAssetManifestS2CPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(WebviewPayloads.WebviewAssetChunkS2CPayload.ID, WebviewPayloads.WebviewAssetChunkS2CPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(WebviewPayloads.WebviewPageEventC2SPayload.ID, WebviewPayloads.WebviewPageEventC2SPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(WebviewPayloads.WebviewAssetRequestC2SPayload.ID, WebviewPayloads.WebviewAssetRequestC2SPayload.CODEC);
         //? }
     }
     //? } else {
@@ -68,11 +71,23 @@ public final class WebviewNetworking {
                         net.minecraft.server.level.ServerPlayer sender = (net.minecraft.server.level.ServerPlayer) ctx.player();
                         // Checked here, off the server thread: enqueueing first would put the
                         // flood on the tick loop, which is the thing being protected.
-                        if (sender == null || !land.webgui.server.WebviewRateLimiter.allow(sender.getUUID(), sender.getName().getString())) {
+                        if (sender == null || !land.webgui.server.WebviewRateLimiter.allowPageEvent(sender.getUUID(), sender.getName().getString())) {
                             return;
                         }
                         ctx.enqueueWork(() ->
                                 WebviewServerEvents.firePageEvent(sender, payload.channel(), payload.jsonPayload()));
+                    });
+
+            reg.playToServer(WebviewPayloads.WebviewAssetRequestC2SPayload.TYPE,
+                    WebviewPayloads.WebviewAssetRequestC2SPayload.STREAM_CODEC,
+                    (payload, ctx) -> {
+                        net.minecraft.server.level.ServerPlayer sender = (net.minecraft.server.level.ServerPlayer) ctx.player();
+                        if (sender == null) {
+                            return;
+                        }
+                        // Reading and slicing a file has no business on the tick loop, and
+                        // the budget check inside is what keeps this from stalling it.
+                        serveAsset(sender, payload.path());
                     });
 
             // S2C types register on both sides (the server sends them), but their
@@ -101,6 +116,10 @@ public final class WebviewNetworking {
                         WebviewPayloads.WebviewDeathS2CPayload.STREAM_CODEC, (payload, ctx) -> {});
                 reg.playToClient(WebviewPayloads.WebviewHelloS2CPayload.TYPE,
                         WebviewPayloads.WebviewHelloS2CPayload.STREAM_CODEC, (payload, ctx) -> {});
+                reg.playToClient(WebviewPayloads.WebviewAssetManifestS2CPayload.TYPE,
+                        WebviewPayloads.WebviewAssetManifestS2CPayload.STREAM_CODEC, (payload, ctx) -> {});
+                reg.playToClient(WebviewPayloads.WebviewAssetChunkS2CPayload.TYPE,
+                        WebviewPayloads.WebviewAssetChunkS2CPayload.STREAM_CODEC, (payload, ctx) -> {});
             }
         });
     }*/
@@ -115,11 +134,21 @@ public final class WebviewNetworking {
             String json    = payload.jsonPayload();
             // Checked here, off the server thread: scheduling first would put the flood on
             // the tick loop, which is the thing being protected.
-            if (player == null || !land.webgui.server.WebviewRateLimiter.allow(player.getUuid(), player.getName().getString())) {
+            if (player == null || !land.webgui.server.WebviewRateLimiter.allowPageEvent(player.getUuid(), player.getName().getString())) {
                 return;
             }
             context.server().execute(() ->
                     WebviewServerEvents.PAGE_EVENT.invoker().onPageEvent(player, channel, json));
+        });
+
+        ServerPlayNetworking.registerGlobalReceiver(WebviewPayloads.WebviewAssetRequestC2SPayload.ID, (payload, context) -> {
+            ServerPlayerEntity player = context.player();
+            if (player == null) {
+                return;
+            }
+            // Reading and slicing a file has no business on the tick loop, and the
+            // budget check inside is what keeps this from being a way to stall it.
+            serveAsset(player, payload.path());
         });
         //? } else {
         /*ServerPlayNetworking.registerGlobalReceiver(WebviewPayloads.PAGE_EVENT_CHANNEL, (server, player, handler, buf, responseSender) -> {
@@ -127,10 +156,20 @@ public final class WebviewNetworking {
             String json    = buf.readString(WebviewPayloads.MAX_EVENT_DATA_LENGTH);
             // Checked here, off the server thread: scheduling first would put the flood on
             // the tick loop, which is the thing being protected.
-            if (player == null || !land.webgui.server.WebviewRateLimiter.allow(player.getUuid(), player.getName().getString())) {
+            if (player == null || !land.webgui.server.WebviewRateLimiter.allowPageEvent(player.getUuid(), player.getName().getString())) {
                 return;
             }
             server.execute(() -> WebviewServerEvents.PAGE_EVENT.invoker().onPageEvent(player, channel, json));
+        });
+
+        ServerPlayNetworking.registerGlobalReceiver(WebviewPayloads.ASSET_REQUEST_CHANNEL, (server, player, handler, buf, responseSender) -> {
+            String path = buf.readString(WebviewPayloads.MAX_ASSET_PATH_LENGTH);
+            if (player == null) {
+                return;
+            }
+            // Reading and slicing a file has no business on the tick loop, and the budget
+            // check inside is what keeps this from being a way to stall it.
+            serveAsset(player, path);
         });*/
         //? }
     }
@@ -276,6 +315,63 @@ public final class WebviewNetworking {
         //? }
     }
 
+    /** Tells the client which pages this server ships. Skipped when it ships none. */
+    public static void sendAssetManifest(ServerPlayerEntity player) {
+        //? if >=1.20.5 {
+        if (!land.webgui.server.WebviewAssets.enabled()
+                || !ServerPlayNetworking.canSend(player, WebviewPayloads.WebviewAssetManifestS2CPayload.ID)) {
+            return;
+        }
+        land.webgui.server.WebviewAssetStore store = land.webgui.server.WebviewAssets.store();
+        ServerPlayNetworking.send(player,
+                new WebviewPayloads.WebviewAssetManifestS2CPayload(store.revision(), store.toManifest()));
+        //? } else {
+        /*if (!land.webgui.server.WebviewAssets.enabled()
+                || !ServerPlayNetworking.canSend(player, WebviewPayloads.ASSET_MANIFEST_CHANNEL)) {
+            return;
+        }
+        land.webgui.server.WebviewAssetStore store = land.webgui.server.WebviewAssets.store();
+        PacketByteBuf buf = PacketByteBufs.create();
+        buf.writeString(store.revision(), WebviewPayloads.MAX_VERSION_LENGTH);
+        buf.writeString(store.toManifest(), WebviewPayloads.MAX_MANIFEST_LENGTH);
+        ServerPlayNetworking.send(player, WebviewPayloads.ASSET_MANIFEST_CHANNEL, buf);*/
+        //? }
+    }
+
+    /**
+     * Answers one asset request, in slices.
+     *
+     * Always answers, even with nothing: the client has a browser request parked on this,
+     * and a page that hangs forever is far worse to diagnose than one that reports a
+     * missing file.
+     */
+    public static void serveAsset(ServerPlayerEntity player, String requested) {
+        String path = land.webgui.server.WebviewAssetStore.normalizeRequest(requested);
+        java.util.List<byte[]> chunks = land.webgui.server.WebviewAssets.chunksFor(
+                player.getUuid(), player.getName().getString(), path);
+
+        if (chunks.isEmpty()) {
+            sendAssetChunk(player, path, 0, 0, new byte[0]);
+            return;
+        }
+        for (int i = 0; i < chunks.size(); i++) {
+            sendAssetChunk(player, path, i, chunks.size(), chunks.get(i));
+        }
+    }
+
+    private static void sendAssetChunk(ServerPlayerEntity player, String path, int index, int count, byte[] bytes) {
+        //? if >=1.20.5 {
+        ServerPlayNetworking.send(player, new WebviewPayloads.WebviewAssetChunkS2CPayload(path, index, count, bytes));
+        //? } else {
+        /*PacketByteBuf buf = PacketByteBufs.create();
+        buf.writeString(path, WebviewPayloads.MAX_ASSET_PATH_LENGTH);
+        buf.writeVarInt(index);
+        buf.writeVarInt(count);
+        buf.writeByteArray(bytes);
+        ServerPlayNetworking.send(player, WebviewPayloads.ASSET_CHUNK_CHANNEL, buf);*/
+        //? }
+    }
+
     public static void sendTrustedOrigins(ServerPlayerEntity player, String origins) {
         String o = origins == null ? "" : origins;
         //? if >=1.20.5 {
@@ -340,6 +436,36 @@ public final class WebviewNetworking {
 
     public static void sendTrustedOrigins(ServerPlayer player, String origins) {
         PacketDistributor.sendToPlayer(player, new WebviewPayloads.WebviewTrustedOriginsS2CPayload(origins == null ? "" : origins));
+    }
+
+    // Tells the client which pages this server ships. Skipped when it ships none.
+    public static void sendAssetManifest(ServerPlayer player) {
+        if (!land.webgui.server.WebviewAssets.enabled()
+                || !player.connection.hasChannel(WebviewPayloads.WebviewAssetManifestS2CPayload.TYPE)) {
+            return;
+        }
+        land.webgui.server.WebviewAssetStore store = land.webgui.server.WebviewAssets.store();
+        PacketDistributor.sendToPlayer(player,
+                new WebviewPayloads.WebviewAssetManifestS2CPayload(store.revision(), store.toManifest()));
+    }
+
+    // Answers one asset request, in slices. Always answers, even with nothing: the client
+    // has a browser request parked on this, and a page that hangs forever is far worse to
+    // diagnose than one that reports a missing file.
+    public static void serveAsset(ServerPlayer player, String requested) {
+        String path = land.webgui.server.WebviewAssetStore.normalizeRequest(requested);
+        java.util.List<byte[]> chunks = land.webgui.server.WebviewAssets.chunksFor(
+                player.getUUID(), player.getName().getString(), path);
+
+        if (chunks.isEmpty()) {
+            PacketDistributor.sendToPlayer(player,
+                    new WebviewPayloads.WebviewAssetChunkS2CPayload(path, 0, 0, new byte[0]));
+            return;
+        }
+        for (int i = 0; i < chunks.size(); i++) {
+            PacketDistributor.sendToPlayer(player,
+                    new WebviewPayloads.WebviewAssetChunkS2CPayload(path, i, chunks.size(), chunks.get(i)));
+        }
     }
 
     // Tells the client which WebGUI the server runs. Silently skipped for a client that

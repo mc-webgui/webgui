@@ -23,6 +23,16 @@ public final class WebviewPageLoadHooks {
                                     org.cef.network.CefRequest.TransitionType transitionType) {
                 RinkuBrowser active = WebSession.browser();
                 if (active == null || browser != active) return;
+
+                // Before the document's own scripts, not after them. Injecting only at
+                // load end meant a plain <script> touching window.webgui threw, because
+                // inline scripts run while the document is still parsing — so the very
+                // first thing anyone writes on their first page failed with
+                // "Cannot read properties of undefined". It is injected again at load
+                // end; the script is written to be idempotent, and a page that replaces
+                // its own document would otherwise lose the bridge.
+                injectBridgeScript(active);
+
                 if (WebSession.mode() == WebSession.Mode.HUD_OVERLAY) {
                     WebHudOverlay.onHudBrowserLoadStart(active);
                 } else if (WebSession.mode() == WebSession.Mode.GUI_SCREEN) {
@@ -88,7 +98,7 @@ public final class WebviewPageLoadHooks {
     private static void injectBridgeScript(RinkuBrowser browser) {
         try {
             String url = browser.getURL();
-            browser.executeJavaScript(WebviewScriptInject.bridgeSetup(), url != null ? url : "", 0);
+            browser.executeJavaScript(WebviewScriptInject.bridgeSetup(WebGUIAssetServer.base()), url != null ? url : "", 0);
         } catch (Throwable t) {
             WebGUIMod.LOGGER.debug("webgui bridge inject: {}", t.toString());
         }

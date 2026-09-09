@@ -68,6 +68,16 @@ public final class WebGUIClient
         ClientPlayNetworking.registerGlobalReceiver(WebviewPayloads.WebviewHelloS2CPayload.ID, (payload, context) -> {
             context.client().execute(() -> WebGUIHandshake.onHello(payload.protocolVersion(), payload.modVersion()));
         });
+
+        ClientPlayNetworking.registerGlobalReceiver(WebviewPayloads.WebviewAssetManifestS2CPayload.ID, (payload, context) -> {
+            context.client().execute(() -> onAssetManifest(payload.revision(), payload.manifest()));
+        });
+
+        ClientPlayNetworking.registerGlobalReceiver(WebviewPayloads.WebviewAssetChunkS2CPayload.ID, (payload, context) -> {
+            // Straight through, off the render thread: a page pulls dozens of files and
+            // every one of them would otherwise queue behind a frame.
+            WebGUIAssetCache.onChunk(payload.path(), payload.chunkIndex(), payload.chunkCount(), payload.bytes());
+        });
         //? } else {
         /*ClientPlayNetworking.registerGlobalReceiver(WebviewPayloads.OPEN_WEB_CHANNEL, (client, handler, buf, responseSender) -> {
             int protocolVersion = buf.readVarInt();
@@ -105,6 +115,22 @@ public final class WebGUIClient
             int protocol   = buf.readVarInt();
             String version = buf.readString(WebviewPayloads.MAX_VERSION_LENGTH);
             client.execute(() -> WebGUIHandshake.onHello(protocol, version));
+        });
+
+        ClientPlayNetworking.registerGlobalReceiver(WebviewPayloads.ASSET_MANIFEST_CHANNEL, (client, handler, buf, responseSender) -> {
+            String rev      = buf.readString(WebviewPayloads.MAX_VERSION_LENGTH);
+            String manifest = buf.readString(WebviewPayloads.MAX_MANIFEST_LENGTH);
+            client.execute(() -> onAssetManifest(rev, manifest));
+        });
+
+        ClientPlayNetworking.registerGlobalReceiver(WebviewPayloads.ASSET_CHUNK_CHANNEL, (client, handler, buf, responseSender) -> {
+            String path = buf.readString(WebviewPayloads.MAX_ASSET_PATH_LENGTH);
+            int index   = buf.readVarInt();
+            int count   = buf.readVarInt();
+            byte[] data = buf.readByteArray(WebviewPayloads.ASSET_CHUNK_BYTES);
+            // Straight through, off the render thread: a page pulls dozens of files and
+            // every one of them would otherwise queue behind a frame.
+            WebGUIAssetCache.onChunk(path, index, count, data);
         });*/
         //? }
 
@@ -129,6 +155,8 @@ public final class WebGUIClient
         WebGUITrustedOrigins.clear();
         WebGUIDeathScreen.clear();
         WebGUIHandshake.clear();
+        WebGUIAssetCache.clear();
+        WebGUIAssetServer.invalidateSession();
     }
 
     /**
@@ -192,6 +220,8 @@ public final class WebGUIClient
         WebGUITrustedOrigins.clear();
         WebGUIDeathScreen.clear();
         WebGUIHandshake.clear();
+        WebGUIAssetCache.clear();
+        WebGUIAssetServer.invalidateSession();
     }
 
     // A url with no info is the join-time push; an info payload means the player
@@ -228,6 +258,12 @@ public final class WebGUIClient
                 (payload, ctx) -> ctx.enqueueWork(() -> onDeathPayload(payload.url(), payload.infoJson())));
         reg.playToClient(WebviewPayloads.WebviewHelloS2CPayload.TYPE, WebviewPayloads.WebviewHelloS2CPayload.STREAM_CODEC,
                 (payload, ctx) -> ctx.enqueueWork(() -> WebGUIHandshake.onHello(payload.protocolVersion(), payload.modVersion())));
+        reg.playToClient(WebviewPayloads.WebviewAssetManifestS2CPayload.TYPE, WebviewPayloads.WebviewAssetManifestS2CPayload.STREAM_CODEC,
+                (payload, ctx) -> ctx.enqueueWork(() -> onAssetManifest(payload.revision(), payload.manifest())));
+        reg.playToClient(WebviewPayloads.WebviewAssetChunkS2CPayload.TYPE, WebviewPayloads.WebviewAssetChunkS2CPayload.STREAM_CODEC,
+                // Straight through, not enqueued: a page pulls dozens of files and every
+                // one of them would otherwise queue behind a frame.
+                (payload, ctx) -> WebGUIAssetCache.onChunk(payload.path(), payload.chunkIndex(), payload.chunkCount(), payload.bytes()));
     }
 
     // Swaps the vanilla death screen for the server's page. Fabric needs a mixin
@@ -279,4 +315,74 @@ public final class WebGUIClient
         }
     }*/
     //? }
+
+    /**
+     * Takes the list of pages a server ships and gets ready to serve them.
+     *
+     * The local server starts here rather than at launch: a client that never joins a
+     * server using this feature has no reason to be listening on anything.
+     */
+    private static void onAssetManifest(String revision, String manifest) {
+        WebGUIAssetCache.useCacheDir(assetCacheDir());
+        WebGUIAssetCache.setManifest(revision, manifest);
+        if (WebGUIAssetCache.isEmpty()) {
+            WebGUIAssetServer.invalidateSession();
+            return;
+        }
+        WebGUIAssetServer.ensureStarted();
+        // These pages come from the server the player is on, so refusing them the command
+        // channel would leave the one place a server fully controls as the one place it
+        // cannot use — and unlike a web host, nobody else can put a file there.
+        WebGUITrustedOrigins.allowAlso(WebGUIAssetServer.origin());
+    }
+
+    /**
+     * Where downloaded pages are kept between sessions.
+     *
+     * Under the game directory rather than the config directory: this is a cache, it can
+     * be deleted at any time, and nothing in it is meant to be edited by hand.
+     */
+    private static java.nio.file.Path assetCacheDir() {
+        //? if fabric {
+        return net.fabricmc.loader.api.FabricLoader.getInstance().getGameDir().resolve("webgui-cache");
+        //? } else {
+        /*return net.neoforged.fml.loading.FMLPaths.GAMEDIR.get().resolve("webgui-cache");*/
+        //? }
+    }
+
+    /**
+     * Asks the server for one file.
+     *
+     * Called from the local page server's thread, so the send is handed to the client
+     * thread rather than done here: NeoForge's distributor reaches for the connection
+     * belonging to the calling thread and comes up empty off it, which showed up as
+     * every bundled page silently failing to load on NeoForge while Fabric was fine.
+     */
+    public static void requestAsset(String path) {
+        //? if fabric {
+        net.minecraft.client.MinecraftClient.getInstance().execute(() -> sendAssetRequest(path));
+        //? } else {
+        /*net.minecraft.client.Minecraft.getInstance().execute(() -> sendAssetRequest(path));*/
+        //? }
+    }
+
+    private static void sendAssetRequest(String path) {
+        //? if fabric {
+        //? if >=1.20.5 {
+        if (ClientPlayNetworking.canSend(WebviewPayloads.WebviewAssetRequestC2SPayload.ID)) {
+            ClientPlayNetworking.send(new WebviewPayloads.WebviewAssetRequestC2SPayload(path));
+        }
+        //? } else {
+        /*net.minecraft.network.PacketByteBuf buf = net.fabricmc.fabric.api.networking.v1.PacketByteBufs.create();
+        buf.writeString(path, WebviewPayloads.MAX_ASSET_PATH_LENGTH);
+        ClientPlayNetworking.send(WebviewPayloads.ASSET_REQUEST_CHANNEL, buf);*/
+        //? }
+        //? } else {
+        /*//? if >=1.21.5 {
+        net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(new WebviewPayloads.WebviewAssetRequestC2SPayload(path));
+        //? } else {
+        net.neoforged.neoforge.network.PacketDistributor.sendToServer(new WebviewPayloads.WebviewAssetRequestC2SPayload(path));
+        //? }*/
+        //? }
+    }
 }

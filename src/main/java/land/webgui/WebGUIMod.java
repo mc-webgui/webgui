@@ -36,6 +36,7 @@ public final class WebGUIMod
         ServerLifecycleEvents.SERVER_STARTING.register(server -> {
             WebviewServerConfig.load();
             EntityBindingStore.load();
+            land.webgui.server.WebviewAssets.reload();
         });
         EntityInteractionListener.register();
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
@@ -71,6 +72,7 @@ public final class WebGUIMod
     private void onServerStarting(ServerStartingEvent event) {
         WebviewServerConfig.load();
         EntityBindingStore.load();
+        land.webgui.server.WebviewAssets.reload();
     }
 
     private void onServerStarted(ServerStartedEvent event) {

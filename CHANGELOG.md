@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- **The server can host its own pages.** Drop files in `config/webgui/web/` and point any URL setting at them with `webgui:/index.html` — no web host, no domain, no port to open. They travel down the connection the player is already on, so it works behind NAT like everything else a server sends.
+  - Addressed by SHA-256: a client that already has a file never asks for it again, and a changed file is simply a different name, so a page can never be stale.
+  - The folder is created on first start with a working page in it, and `/webgui reload` picks up edits without a restart.
+  - Limits, so a mistake here cannot take a server down: 8 MiB per file, 64 MiB in total, 2000 files, and `assetBytesPerSecond` (default 4 MiB/s per player).
+  - **External hosting is unchanged.** `http://` and `https://` URLs behave exactly as before, and the two mix freely.
+  - One thing to know: a bundled page is served from `http://127.0.0.1:25580`, not from your domain, so your API needs to allow that origin in CORS.
+- `window.webgui.assetsBase` — where the server's own files are served from, so a page can build a URL to one without knowing the port.
+- `serveBundledPages`, `bundledPagesDir` and `assetBytesPerSecond` in `config/webgui/server.json`.
+
+### Fixed
+- **Fixed `window.webgui` being undefined while a page was still loading.** The bridge was injected only after the document finished, so a plain inline script calling it threw `Cannot read properties of undefined`; only pages that waited for `DOMContentLoaded` or later ever worked.
+
 ## 1.7.1 - 2026-09-09
 
 ### Added

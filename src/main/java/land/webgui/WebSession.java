@@ -78,7 +78,7 @@ public final class WebSession {
         } else {
             closeActiveBrowser();
         }
-        browser = Rinku.createBrowser(url, true);
+        browser = Rinku.createBrowser(WebGUIAssetServer.resolve(url), true);
         mode = Mode.GUI_SCREEN;
         WebviewClientBridge.clearCache();
         return browser;
@@ -87,12 +87,12 @@ public final class WebSession {
     public static RinkuBrowser openForHud(String url) {
         closeSuspendedHudBrowser();
         if (mode == Mode.HUD_OVERLAY && browser != null) {
-            browser.loadURL(url);
+            browser.loadURL(WebGUIAssetServer.resolve(url));
             WebviewClientBridge.clearCache();
             return browser;
         }
         closeActiveBrowser();
-        browser = Rinku.createBrowser(url, true);
+        browser = Rinku.createBrowser(WebGUIAssetServer.resolve(url), true);
         mode = Mode.HUD_OVERLAY;
         WebviewClientBridge.clearCache();
         return browser;

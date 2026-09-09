@@ -31,6 +31,10 @@ public final class WebviewJoinHud {
 
                     WebviewNetworking.sendTrustedOrigins(player, WebviewServerConfig.trustedCommandOriginsJoined());
 
+                    // Before any page URL: a page pointed at webgui:/ cannot resolve
+                    // anything until the client knows what the server ships.
+                    WebviewNetworking.sendAssetManifest(player);
+
                     // Pushed now, not at death: the client has to know whether to
                     // suppress the vanilla death screen the instant it is opened.
                     WebviewNetworking.sendDeathScreen(player, WebviewServerConfig.deathScreenUrl(), "");
@@ -76,6 +80,10 @@ public final class WebviewJoinHud {
         }
 
         WebviewNetworking.sendTrustedOrigins(player, WebviewServerConfig.trustedCommandOriginsJoined());
+
+        // Before any page URL: a page pointed at webgui:/ cannot resolve anything until
+        // the client knows what the server ships.
+        WebviewNetworking.sendAssetManifest(player);
 
         // Pushed now, not at death: the client has to know whether to suppress the
         // vanilla death screen the instant it is opened.

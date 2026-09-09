@@ -47,12 +47,20 @@ public final class WebviewServerConfig {
     // Page shown instead of the vanilla death screen. Empty = keep the vanilla screen.
     private String deathScreenUrl = "";
 
+    // Serve pages from config/webgui/web/ over the players' own connection, so a server
+    // needs no web host to use any of this. Directory relative to config/webgui.
+    private Boolean serveBundledPages;
+    private String bundledPagesDir = "web";
+
     // Refuse players whose client has no compatible WebGUI, instead of letting them in
     // with a warning. Off by default: WebGUI enhances a client, it does not gate entry.
     private Boolean requireClientMod;
 
     // Page events accepted from one player per second; the rest are dropped. 0 = no limit.
     private int pageEventsPerSecond = 20;
+
+    // Bundled page bytes one player may pull per second. 0 = no limit.
+    private int assetBytesPerSecond = 4 * 1024 * 1024;
 
     // {"version":"1.2.3"} or GitHub Releases {"tag_name":"v1.2.3","html_url":"..."}; empty = disabled
     private String updateCheckUrl = "";
@@ -87,6 +95,9 @@ public final class WebviewServerConfig {
             o.addProperty("mainMenuUrl", "http://your-site.example/menu");
 
             o.addProperty("deathScreenUrl", "");
+
+            o.addProperty("serveBundledPages", true);
+            o.addProperty("bundledPagesDir", "web");
 
             o.addProperty("requireClientMod", false);
             o.addProperty("pageEventsPerSecond", 20);
@@ -224,6 +235,30 @@ public final class WebviewServerConfig {
     }
 
     /**
+     * Whether the server ships its own pages to clients over their game connection.
+     *
+     * On by default, and harmless when the directory is empty: it is the whole point of
+     * the feature that a server owner needs nothing but a folder to get started.
+     */
+    public static boolean serveBundledPages() {
+        Boolean v = instance.serveBundledPages;
+        return v == null || v;
+    }
+
+    /** Where those pages live, resolved under {@code config/webgui}. */
+    public static Path bundledPagesRoot() {
+        String dir = instance.bundledPagesDir;
+        if (dir == null || dir.isBlank()) {
+            dir = "web";
+        }
+        Path base = configPath().getParent();
+        Path resolved = base.resolve(dir).normalize();
+        // A path escaping config/webgui would publish something the operator did not
+        // mean to publish, and this value comes out of an editable file.
+        return resolved.startsWith(base.normalize()) ? resolved : base.resolve("web");
+    }
+
+    /**
      * Whether a client without a compatible WebGUI is refused rather than warned.
      *
      * Default off. A server that opens pages the player cannot see still works — they
@@ -238,6 +273,17 @@ public final class WebviewServerConfig {
     /** Page events accepted from one player per second; 0 means no limit. */
     public static int pageEventsPerSecond() {
         return Math.max(0, instance.pageEventsPerSecond);
+    }
+
+    /**
+     * Bundled page bytes one player may pull per second; 0 means no limit.
+     *
+     * A page bundle is fetched once and then cached by hash, so this only has to be
+     * generous enough for a first load — it exists to stop one client asking for the
+     * same 8 MB file forty times a second.
+     */
+    public static int assetBytesPerSecond() {
+        return Math.max(0, instance.assetBytesPerSecond);
     }
 
     public static String updateCheckUrl() {
@@ -277,6 +323,7 @@ public final class WebviewServerConfig {
                 save();
                 WebGUIMod.LOGGER.info("webgui: generated new token secret during reload");
             }
+            WebviewAssets.reload();
             WebGUIMod.LOGGER.info("webgui: config reloaded from {}", path);
             return "WebGUI config reloaded from " + path.getFileName();
         } catch (IOException e) {

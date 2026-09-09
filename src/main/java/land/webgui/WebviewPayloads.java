@@ -29,6 +29,17 @@ public final class WebviewPayloads {
     public static final int MAX_EVENT_NAME_LENGTH = 256;
     public static final int MAX_EVENT_DATA_LENGTH = 32_768;
     public static final int MAX_VERSION_LENGTH = 64;
+    /** One asset path. Longer than any sane bundle nests, short enough to bound the manifest. */
+    public static final int MAX_ASSET_PATH_LENGTH = 256;
+    /** The whole file list, sent once per join. Half of a custom payload's 1 MiB ceiling. */
+    public static final int MAX_MANIFEST_LENGTH = 512 * 1024;
+    /**
+     * Bytes per asset chunk.
+     *
+     * Well under the ceiling on either direction, and small enough that one player's
+     * download does not sit in front of everyone else's gameplay packets.
+     */
+    public static final int ASSET_CHUNK_BYTES = 32 * 1024;
 
     // Channel identifiers — used in both legacy (1.20.1) and modern networking
     //? if fabric {
@@ -40,6 +51,9 @@ public final class WebviewPayloads {
     public static final Identifier TRUSTED_ORIGINS_CHANNEL = Identifier.of(WebGUIMod.MOD_ID, "trusted_origins");
     public static final Identifier DEATH_SCREEN_CHANNEL   = Identifier.of(WebGUIMod.MOD_ID, "death_screen");
     public static final Identifier HELLO_CHANNEL          = Identifier.of(WebGUIMod.MOD_ID, "hello");
+    public static final Identifier ASSET_MANIFEST_CHANNEL = Identifier.of(WebGUIMod.MOD_ID, "asset_manifest");
+    public static final Identifier ASSET_REQUEST_CHANNEL  = Identifier.of(WebGUIMod.MOD_ID, "asset_request");
+    public static final Identifier ASSET_CHUNK_CHANNEL    = Identifier.of(WebGUIMod.MOD_ID, "asset_chunk");
     //? } else {
     /*//? if >=1.21.5 {
     public static final Identifier OPEN_WEB_CHANNEL       = Identifier.fromNamespaceAndPath(WebGUIMod.MOD_ID, "open_web");
@@ -50,6 +64,9 @@ public final class WebviewPayloads {
     public static final Identifier TRUSTED_ORIGINS_CHANNEL = Identifier.fromNamespaceAndPath(WebGUIMod.MOD_ID, "trusted_origins");
     public static final Identifier DEATH_SCREEN_CHANNEL   = Identifier.fromNamespaceAndPath(WebGUIMod.MOD_ID, "death_screen");
     public static final Identifier HELLO_CHANNEL          = Identifier.fromNamespaceAndPath(WebGUIMod.MOD_ID, "hello");
+    public static final Identifier ASSET_MANIFEST_CHANNEL = Identifier.fromNamespaceAndPath(WebGUIMod.MOD_ID, "asset_manifest");
+    public static final Identifier ASSET_REQUEST_CHANNEL  = Identifier.fromNamespaceAndPath(WebGUIMod.MOD_ID, "asset_request");
+    public static final Identifier ASSET_CHUNK_CHANNEL    = Identifier.fromNamespaceAndPath(WebGUIMod.MOD_ID, "asset_chunk");
     //? } else {
     public static final ResourceLocation OPEN_WEB_CHANNEL       = ResourceLocation.fromNamespaceAndPath(WebGUIMod.MOD_ID, "open_web");
     public static final ResourceLocation MAIN_MENU_CHANNEL      = ResourceLocation.fromNamespaceAndPath(WebGUIMod.MOD_ID, "set_main_menu");
@@ -59,6 +76,9 @@ public final class WebviewPayloads {
     public static final ResourceLocation TRUSTED_ORIGINS_CHANNEL = ResourceLocation.fromNamespaceAndPath(WebGUIMod.MOD_ID, "trusted_origins");
     public static final ResourceLocation DEATH_SCREEN_CHANNEL   = ResourceLocation.fromNamespaceAndPath(WebGUIMod.MOD_ID, "death_screen");
     public static final ResourceLocation HELLO_CHANNEL          = ResourceLocation.fromNamespaceAndPath(WebGUIMod.MOD_ID, "hello");
+    public static final ResourceLocation ASSET_MANIFEST_CHANNEL = ResourceLocation.fromNamespaceAndPath(WebGUIMod.MOD_ID, "asset_manifest");
+    public static final ResourceLocation ASSET_REQUEST_CHANNEL  = ResourceLocation.fromNamespaceAndPath(WebGUIMod.MOD_ID, "asset_request");
+    public static final ResourceLocation ASSET_CHUNK_CHANNEL    = ResourceLocation.fromNamespaceAndPath(WebGUIMod.MOD_ID, "asset_chunk");
     //? }*/
     //? }
 
@@ -191,6 +211,64 @@ public final class WebviewPayloads {
         }
     }
 
+    /**
+     * S2C: the list of pages this server ships, sent on join and after a reload.
+     *
+     * Paths with hashes rather than content: a client that already holds a file from an
+     * earlier session asks for nothing, and the same hash can be cached forever because
+     * changing the file changes the name.
+     */
+    public record WebviewAssetManifestS2CPayload(String revision, String manifest) implements CustomPayload {
+        public static final CustomPayload.Id<WebviewAssetManifestS2CPayload> ID =
+                new CustomPayload.Id<>(ASSET_MANIFEST_CHANNEL);
+        public static final PacketCodec<RegistryByteBuf, WebviewAssetManifestS2CPayload> CODEC = PacketCodec.tuple(
+                PacketCodecs.string(MAX_VERSION_LENGTH), WebviewAssetManifestS2CPayload::revision,
+                PacketCodecs.string(MAX_MANIFEST_LENGTH), WebviewAssetManifestS2CPayload::manifest,
+                WebviewAssetManifestS2CPayload::new);
+
+        @Override
+        public Id<? extends CustomPayload> getId() {
+            return ID;
+        }
+    }
+
+    /** C2S: the client wants one file from the manifest. */
+    public record WebviewAssetRequestC2SPayload(String path) implements CustomPayload {
+        public static final CustomPayload.Id<WebviewAssetRequestC2SPayload> ID =
+                new CustomPayload.Id<>(ASSET_REQUEST_CHANNEL);
+        public static final PacketCodec<RegistryByteBuf, WebviewAssetRequestC2SPayload> CODEC = PacketCodec.tuple(
+                PacketCodecs.string(MAX_ASSET_PATH_LENGTH), WebviewAssetRequestC2SPayload::path,
+                WebviewAssetRequestC2SPayload::new);
+
+        @Override
+        public Id<? extends CustomPayload> getId() {
+            return ID;
+        }
+    }
+
+    /**
+     * S2C: one slice of a requested file.
+     *
+     * A {@code chunkCount} of zero means the server has no such file — the client is
+     * waiting on a browser request and needs an answer either way, or the page hangs.
+     */
+    public record WebviewAssetChunkS2CPayload(String path, int chunkIndex, int chunkCount, byte[] bytes)
+            implements CustomPayload {
+        public static final CustomPayload.Id<WebviewAssetChunkS2CPayload> ID =
+                new CustomPayload.Id<>(ASSET_CHUNK_CHANNEL);
+        public static final PacketCodec<RegistryByteBuf, WebviewAssetChunkS2CPayload> CODEC = PacketCodec.tuple(
+                PacketCodecs.string(MAX_ASSET_PATH_LENGTH), WebviewAssetChunkS2CPayload::path,
+                PacketCodecs.VAR_INT, WebviewAssetChunkS2CPayload::chunkIndex,
+                PacketCodecs.VAR_INT, WebviewAssetChunkS2CPayload::chunkCount,
+                PacketCodecs.byteArray(ASSET_CHUNK_BYTES), WebviewAssetChunkS2CPayload::bytes,
+                WebviewAssetChunkS2CPayload::new);
+
+        @Override
+        public Id<? extends CustomPayload> getId() {
+            return ID;
+        }
+    }
+
     /** S2C: newline-joined origins whose pages may run commands as the player. */
     public record WebviewTrustedOriginsS2CPayload(String origins) implements CustomPayload {
         public static final CustomPayload.Id<WebviewTrustedOriginsS2CPayload> ID =
@@ -307,6 +385,55 @@ public final class WebviewPayloads {
                         ByteBufCodecs.VAR_INT, WebviewHelloS2CPayload::protocolVersion,
                         ByteBufCodecs.stringUtf8(MAX_VERSION_LENGTH), WebviewHelloS2CPayload::modVersion,
                         WebviewHelloS2CPayload::new);
+
+        @Override
+        public CustomPacketPayload.Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
+    // S2C: the list of pages this server ships, sent on join and after a reload. Paths
+    // with hashes rather than content: a client that already holds a file from an earlier
+    // session asks for nothing, and the same hash can be cached forever because changing
+    // the file changes the name.
+    public record WebviewAssetManifestS2CPayload(String revision, String manifest) implements CustomPacketPayload {
+        public static final CustomPacketPayload.Type<WebviewAssetManifestS2CPayload> TYPE =
+                new CustomPacketPayload.Type<>(ASSET_MANIFEST_CHANNEL);
+        public static final StreamCodec<RegistryFriendlyByteBuf, WebviewAssetManifestS2CPayload> STREAM_CODEC =
+                StreamCodec.composite(
+                        ByteBufCodecs.stringUtf8(MAX_VERSION_LENGTH), WebviewAssetManifestS2CPayload::revision,
+                        ByteBufCodecs.stringUtf8(MAX_MANIFEST_LENGTH), WebviewAssetManifestS2CPayload::manifest,
+                        WebviewAssetManifestS2CPayload::new);
+
+        @Override
+        public CustomPacketPayload.Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
+    // C2S: the client wants one file from the manifest.
+    public record WebviewAssetRequestC2SPayload(String path) implements CustomPacketPayload {
+        public static final CustomPacketPayload.Type<WebviewAssetRequestC2SPayload> TYPE =
+                new CustomPacketPayload.Type<>(ASSET_REQUEST_CHANNEL);
+        public static final StreamCodec<RegistryFriendlyByteBuf, WebviewAssetRequestC2SPayload> STREAM_CODEC =
+                StreamCodec.composite(
+                        ByteBufCodecs.stringUtf8(MAX_ASSET_PATH_LENGTH), WebviewAssetRequestC2SPayload::path,
+                        WebviewAssetRequestC2SPayload::new);
+
+        @Override
+        public CustomPacketPayload.Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
+    // S2C: one slice of a requested file. A chunkCount of zero means the server has no
+    // such file - the client is waiting on a browser request and needs an answer either
+    // way, or the page hangs.
+    public record WebviewAssetChunkS2CPayload(String path, int chunkIndex, int chunkCount, byte[] bytes)
+            implements CustomPacketPayload {
+        public static final CustomPacketPayload.Type<WebviewAssetChunkS2CPayload> TYPE =
+                new CustomPacketPayload.Type<>(ASSET_CHUNK_CHANNEL);
+        public static final StreamCodec<RegistryFriendlyByteBuf, WebviewAssetChunkS2CPayload> STREAM_CODEC =
+                StreamCodec.composite(
+                        ByteBufCodecs.stringUtf8(MAX_ASSET_PATH_LENGTH), WebviewAssetChunkS2CPayload::path,
+                        ByteBufCodecs.VAR_INT, WebviewAssetChunkS2CPayload::chunkIndex,
+                        ByteBufCodecs.VAR_INT, WebviewAssetChunkS2CPayload::chunkCount,
+                        ByteBufCodecs.byteArray(ASSET_CHUNK_BYTES), WebviewAssetChunkS2CPayload::bytes,
+                        WebviewAssetChunkS2CPayload::new);
 
         @Override
         public CustomPacketPayload.Type<? extends CustomPacketPayload> type() { return TYPE; }
