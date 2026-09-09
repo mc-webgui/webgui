@@ -27,6 +27,16 @@ public final class WebviewNetworking {
     public static final int MODE_HUD = 1;
     public static final int MAX_URL_LENGTH = 16384;
 
+    /** What the far end of a connection turned out to be. */
+    public enum ClientKind {
+        /** Speaks this protocol: the handshake channel is registered. */
+        CURRENT,
+        /** Has WebGUI, but an older build without the handshake channel. */
+        OUTDATED,
+        /** No WebGUI at all — a vanilla client, or one that simply does not have it. */
+        ABSENT,
+    }
+
     private WebviewNetworking() {}
 
     //? if fabric {
@@ -38,17 +48,32 @@ public final class WebviewNetworking {
         PayloadTypeRegistry.playS2C().register(WebviewPayloads.WebviewEntityContextS2CPayload.ID, WebviewPayloads.WebviewEntityContextS2CPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(WebviewPayloads.WebviewTrustedOriginsS2CPayload.ID, WebviewPayloads.WebviewTrustedOriginsS2CPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(WebviewPayloads.WebviewDeathS2CPayload.ID, WebviewPayloads.WebviewDeathS2CPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(WebviewPayloads.WebviewHelloS2CPayload.ID, WebviewPayloads.WebviewHelloS2CPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(WebviewPayloads.WebviewPageEventC2SPayload.ID, WebviewPayloads.WebviewPageEventC2SPayload.CODEC);
         //? }
     }
     //? } else {
     /*public static void registerPayloadTypes(IEventBus modBus) {
         modBus.addListener((RegisterPayloadHandlersEvent event) -> {
-            final var reg = event.registrar("1");
+            // Optional, or NeoForge refuses any client that does not register every one
+            // of these channels — including a client running an older WebGUI — and the
+            // player is told "Incompatible client! Please use NeoForge <x>", which names
+            // the wrong mod entirely. WebGUI enhances a client; it does not gate entry.
+            // Servers that really do require it set requireClientMod in server.json, and
+            // then the kick message says so in as many words.
+            final var reg = event.registrar("1").optional();
             reg.playToServer(WebviewPayloads.WebviewPageEventC2SPayload.TYPE,
                     WebviewPayloads.WebviewPageEventC2SPayload.STREAM_CODEC,
-                    (payload, ctx) -> ctx.enqueueWork(() ->
-                            WebviewServerEvents.firePageEvent((net.minecraft.server.level.ServerPlayer) ctx.player(), payload.channel(), payload.jsonPayload())));
+                    (payload, ctx) -> {
+                        net.minecraft.server.level.ServerPlayer sender = (net.minecraft.server.level.ServerPlayer) ctx.player();
+                        // Checked here, off the server thread: enqueueing first would put the
+                        // flood on the tick loop, which is the thing being protected.
+                        if (sender == null || !land.webgui.server.WebviewRateLimiter.allow(sender.getUUID(), sender.getName().getString())) {
+                            return;
+                        }
+                        ctx.enqueueWork(() ->
+                                WebviewServerEvents.firePageEvent(sender, payload.channel(), payload.jsonPayload()));
+                    });
 
             // S2C types register on both sides (the server sends them), but their
             // handlers touch client-only classes — loading those on a dedicated
@@ -74,6 +99,8 @@ public final class WebviewNetworking {
                         WebviewPayloads.WebviewTrustedOriginsS2CPayload.STREAM_CODEC, (payload, ctx) -> {});
                 reg.playToClient(WebviewPayloads.WebviewDeathS2CPayload.TYPE,
                         WebviewPayloads.WebviewDeathS2CPayload.STREAM_CODEC, (payload, ctx) -> {});
+                reg.playToClient(WebviewPayloads.WebviewHelloS2CPayload.TYPE,
+                        WebviewPayloads.WebviewHelloS2CPayload.STREAM_CODEC, (payload, ctx) -> {});
             }
         });
     }*/
@@ -86,6 +113,11 @@ public final class WebviewNetworking {
             ServerPlayerEntity player = context.player();
             String channel = payload.channel();
             String json    = payload.jsonPayload();
+            // Checked here, off the server thread: scheduling first would put the flood on
+            // the tick loop, which is the thing being protected.
+            if (player == null || !land.webgui.server.WebviewRateLimiter.allow(player.getUuid(), player.getName().getString())) {
+                return;
+            }
             context.server().execute(() ->
                     WebviewServerEvents.PAGE_EVENT.invoker().onPageEvent(player, channel, json));
         });
@@ -93,6 +125,11 @@ public final class WebviewNetworking {
         /*ServerPlayNetworking.registerGlobalReceiver(WebviewPayloads.PAGE_EVENT_CHANNEL, (server, player, handler, buf, responseSender) -> {
             String channel = buf.readString(WebviewPayloads.MAX_EVENT_NAME_LENGTH);
             String json    = buf.readString(WebviewPayloads.MAX_EVENT_DATA_LENGTH);
+            // Checked here, off the server thread: scheduling first would put the flood on
+            // the tick loop, which is the thing being protected.
+            if (player == null || !land.webgui.server.WebviewRateLimiter.allow(player.getUuid(), player.getName().getString())) {
+                return;
+            }
             server.execute(() -> WebviewServerEvents.PAGE_EVENT.invoker().onPageEvent(player, channel, json));
         });*/
         //? }
@@ -198,6 +235,47 @@ public final class WebviewNetworking {
         //? }
     }
 
+    /**
+     * Tells the client which WebGUI the server runs. Silently skipped for a client that
+     * has no such channel — that case is reported to the player as text instead.
+     */
+    public static void sendHello(ServerPlayerEntity player) {
+        //? if >=1.20.5 {
+        if (!ServerPlayNetworking.canSend(player, WebviewPayloads.WebviewHelloS2CPayload.ID)) {
+            return;
+        }
+        ServerPlayNetworking.send(player, new WebviewPayloads.WebviewHelloS2CPayload(PROTOCOL_VERSION, WebGUIVersion.current()));
+        //? } else {
+        /*if (!ServerPlayNetworking.canSend(player, WebviewPayloads.HELLO_CHANNEL)) {
+            return;
+        }
+        PacketByteBuf buf = PacketByteBufs.create();
+        buf.writeVarInt(PROTOCOL_VERSION);
+        buf.writeString(WebGUIVersion.current(), WebviewPayloads.MAX_VERSION_LENGTH);
+        ServerPlayNetworking.send(player, WebviewPayloads.HELLO_CHANNEL, buf);*/
+        //? }
+    }
+
+    /** Whether the player's client has WebGUI, and whether it is new enough to talk to us. */
+    public static ClientKind clientKind(ServerPlayerEntity player) {
+        //? if >=1.20.5 {
+        if (ServerPlayNetworking.canSend(player, WebviewPayloads.WebviewHelloS2CPayload.ID)) {
+            return ClientKind.CURRENT;
+        }
+        // No handshake channel but the original one is there: WebGUI, just an older build.
+        return ServerPlayNetworking.canSend(player, WebviewPayloads.OpenWebS2CPayload.ID)
+                ? ClientKind.OUTDATED
+                : ClientKind.ABSENT;
+        //? } else {
+        /*if (ServerPlayNetworking.canSend(player, WebviewPayloads.HELLO_CHANNEL)) {
+            return ClientKind.CURRENT;
+        }
+        return ServerPlayNetworking.canSend(player, WebviewPayloads.OPEN_WEB_CHANNEL)
+                ? ClientKind.OUTDATED
+                : ClientKind.ABSENT;*/
+        //? }
+    }
+
     public static void sendTrustedOrigins(ServerPlayerEntity player, String origins) {
         String o = origins == null ? "" : origins;
         //? if >=1.20.5 {
@@ -262,6 +340,26 @@ public final class WebviewNetworking {
 
     public static void sendTrustedOrigins(ServerPlayer player, String origins) {
         PacketDistributor.sendToPlayer(player, new WebviewPayloads.WebviewTrustedOriginsS2CPayload(origins == null ? "" : origins));
+    }
+
+    // Tells the client which WebGUI the server runs. Silently skipped for a client that
+    // has no such channel — that case is reported to the player as text instead.
+    public static void sendHello(ServerPlayer player) {
+        if (!player.connection.hasChannel(WebviewPayloads.WebviewHelloS2CPayload.TYPE)) {
+            return;
+        }
+        PacketDistributor.sendToPlayer(player, new WebviewPayloads.WebviewHelloS2CPayload(PROTOCOL_VERSION, WebGUIVersion.current()));
+    }
+
+    // Whether the player's client has WebGUI, and whether it is new enough to talk to us.
+    public static ClientKind clientKind(ServerPlayer player) {
+        if (player.connection.hasChannel(WebviewPayloads.WebviewHelloS2CPayload.TYPE)) {
+            return ClientKind.CURRENT;
+        }
+        // No handshake channel but the original one is there: WebGUI, just an older build.
+        return player.connection.hasChannel(WebviewPayloads.OpenWebS2CPayload.TYPE)
+                ? ClientKind.OUTDATED
+                : ClientKind.ABSENT;
     }
 
     private static String withPlayerToken(ServerPlayer player, String url) {

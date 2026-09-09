@@ -28,6 +28,7 @@ public final class WebviewPayloads {
 
     public static final int MAX_EVENT_NAME_LENGTH = 256;
     public static final int MAX_EVENT_DATA_LENGTH = 32_768;
+    public static final int MAX_VERSION_LENGTH = 64;
 
     // Channel identifiers — used in both legacy (1.20.1) and modern networking
     //? if fabric {
@@ -38,6 +39,7 @@ public final class WebviewPayloads {
     public static final Identifier ENTITY_CONTEXT_CHANNEL = Identifier.of(WebGUIMod.MOD_ID, "entity_context");
     public static final Identifier TRUSTED_ORIGINS_CHANNEL = Identifier.of(WebGUIMod.MOD_ID, "trusted_origins");
     public static final Identifier DEATH_SCREEN_CHANNEL   = Identifier.of(WebGUIMod.MOD_ID, "death_screen");
+    public static final Identifier HELLO_CHANNEL          = Identifier.of(WebGUIMod.MOD_ID, "hello");
     //? } else {
     /*//? if >=1.21.5 {
     public static final Identifier OPEN_WEB_CHANNEL       = Identifier.fromNamespaceAndPath(WebGUIMod.MOD_ID, "open_web");
@@ -47,6 +49,7 @@ public final class WebviewPayloads {
     public static final Identifier ENTITY_CONTEXT_CHANNEL = Identifier.fromNamespaceAndPath(WebGUIMod.MOD_ID, "entity_context");
     public static final Identifier TRUSTED_ORIGINS_CHANNEL = Identifier.fromNamespaceAndPath(WebGUIMod.MOD_ID, "trusted_origins");
     public static final Identifier DEATH_SCREEN_CHANNEL   = Identifier.fromNamespaceAndPath(WebGUIMod.MOD_ID, "death_screen");
+    public static final Identifier HELLO_CHANNEL          = Identifier.fromNamespaceAndPath(WebGUIMod.MOD_ID, "hello");
     //? } else {
     public static final ResourceLocation OPEN_WEB_CHANNEL       = ResourceLocation.fromNamespaceAndPath(WebGUIMod.MOD_ID, "open_web");
     public static final ResourceLocation MAIN_MENU_CHANNEL      = ResourceLocation.fromNamespaceAndPath(WebGUIMod.MOD_ID, "set_main_menu");
@@ -55,6 +58,7 @@ public final class WebviewPayloads {
     public static final ResourceLocation ENTITY_CONTEXT_CHANNEL = ResourceLocation.fromNamespaceAndPath(WebGUIMod.MOD_ID, "entity_context");
     public static final ResourceLocation TRUSTED_ORIGINS_CHANNEL = ResourceLocation.fromNamespaceAndPath(WebGUIMod.MOD_ID, "trusted_origins");
     public static final ResourceLocation DEATH_SCREEN_CHANNEL   = ResourceLocation.fromNamespaceAndPath(WebGUIMod.MOD_ID, "death_screen");
+    public static final ResourceLocation HELLO_CHANNEL          = ResourceLocation.fromNamespaceAndPath(WebGUIMod.MOD_ID, "hello");
     //? }*/
     //? }
 
@@ -162,6 +166,31 @@ public final class WebviewPayloads {
         }
     }
 
+    /**
+     * S2C: what the server is running, sent the moment a player joins.
+     *
+     * The client cannot otherwise tell a server that speaks an older WebGUI protocol
+     * from one that speaks none at all, and the loaders disagree about what happens
+     * then: NeoForge refuses the connection outright with a message about its own
+     * version, Fabric lets the player in and silently drops every packet. Either way
+     * the player is left guessing. This says plainly who is running what.
+     */
+    public record WebviewHelloS2CPayload(int protocolVersion, String modVersion) implements CustomPayload {
+        public static final CustomPayload.Id<WebviewHelloS2CPayload> ID =
+                new CustomPayload.Id<>(HELLO_CHANNEL);
+        public static final PacketCodec<RegistryByteBuf, WebviewHelloS2CPayload> CODEC = PacketCodec.tuple(
+                PacketCodecs.VAR_INT,
+                WebviewHelloS2CPayload::protocolVersion,
+                PacketCodecs.string(MAX_VERSION_LENGTH),
+                WebviewHelloS2CPayload::modVersion,
+                WebviewHelloS2CPayload::new);
+
+        @Override
+        public Id<? extends CustomPayload> getId() {
+            return ID;
+        }
+    }
+
     /** S2C: newline-joined origins whose pages may run commands as the player. */
     public record WebviewTrustedOriginsS2CPayload(String origins) implements CustomPayload {
         public static final CustomPayload.Id<WebviewTrustedOriginsS2CPayload> ID =
@@ -260,6 +289,24 @@ public final class WebviewPayloads {
                         ByteBufCodecs.stringUtf8(MAX_EVENT_DATA_LENGTH),
                         WebviewDeathS2CPayload::infoJson,
                         WebviewDeathS2CPayload::new);
+
+        @Override
+        public CustomPacketPayload.Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
+    // S2C: what the server is running, sent the moment a player joins. The client cannot
+    // otherwise tell a server that speaks an older WebGUI protocol from one that speaks
+    // none at all, and the loaders disagree about what happens then: NeoForge refuses the
+    // connection with a message about its own version, Fabric lets the player in and
+    // silently drops every packet. This says plainly who is running what.
+    public record WebviewHelloS2CPayload(int protocolVersion, String modVersion) implements CustomPacketPayload {
+        public static final CustomPacketPayload.Type<WebviewHelloS2CPayload> TYPE =
+                new CustomPacketPayload.Type<>(HELLO_CHANNEL);
+        public static final StreamCodec<RegistryFriendlyByteBuf, WebviewHelloS2CPayload> STREAM_CODEC =
+                StreamCodec.composite(
+                        ByteBufCodecs.VAR_INT, WebviewHelloS2CPayload::protocolVersion,
+                        ByteBufCodecs.stringUtf8(MAX_VERSION_LENGTH), WebviewHelloS2CPayload::modVersion,
+                        WebviewHelloS2CPayload::new);
 
         @Override
         public CustomPacketPayload.Type<? extends CustomPacketPayload> type() { return TYPE; }

@@ -64,6 +64,10 @@ public final class WebGUIClient
         ClientPlayNetworking.registerGlobalReceiver(WebviewPayloads.WebviewDeathS2CPayload.ID, (payload, context) -> {
             context.client().execute(() -> onDeathPayload(payload.url(), payload.infoJson()));
         });
+
+        ClientPlayNetworking.registerGlobalReceiver(WebviewPayloads.WebviewHelloS2CPayload.ID, (payload, context) -> {
+            context.client().execute(() -> WebGUIHandshake.onHello(payload.protocolVersion(), payload.modVersion()));
+        });
         //? } else {
         /*ClientPlayNetworking.registerGlobalReceiver(WebviewPayloads.OPEN_WEB_CHANNEL, (client, handler, buf, responseSender) -> {
             int protocolVersion = buf.readVarInt();
@@ -95,6 +99,12 @@ public final class WebGUIClient
             String url  = buf.readString(WebviewNetworking.MAX_URL_LENGTH);
             String info = buf.readString(WebviewPayloads.MAX_EVENT_DATA_LENGTH);
             client.execute(() -> onDeathPayload(url, info));
+        });
+
+        ClientPlayNetworking.registerGlobalReceiver(WebviewPayloads.HELLO_CHANNEL, (client, handler, buf, responseSender) -> {
+            int protocol   = buf.readVarInt();
+            String version = buf.readString(WebviewPayloads.MAX_VERSION_LENGTH);
+            client.execute(() -> WebGUIHandshake.onHello(protocol, version));
         });*/
         //? }
 
@@ -118,6 +128,7 @@ public final class WebGUIClient
         WebGUIMainMenuUrl.setUrl("");
         WebGUITrustedOrigins.clear();
         WebGUIDeathScreen.clear();
+        WebGUIHandshake.clear();
     }
 
     /**
@@ -180,6 +191,7 @@ public final class WebGUIClient
         WebGUIMainMenuUrl.setUrl("");
         WebGUITrustedOrigins.clear();
         WebGUIDeathScreen.clear();
+        WebGUIHandshake.clear();
     }
 
     // A url with no info is the join-time push; an info payload means the player
@@ -195,7 +207,10 @@ public final class WebGUIClient
     // Called only on the client (from WebviewNetworking.registerPayloadTypes) so
     // these client-only handlers never load on a dedicated server.
     public static void registerClientReceivers(RegisterPayloadHandlersEvent event) {
-        final var reg = event.registrar("1");
+        // Optional for the same reason the server side is: a required channel here would
+        // make this client refuse any server running an older WebGUI, and NeoForge would
+        // blame its own version for it.
+        final var reg = event.registrar("1").optional();
         reg.playToClient(WebviewPayloads.OpenWebS2CPayload.TYPE, WebviewPayloads.OpenWebS2CPayload.STREAM_CODEC,
                 (payload, ctx) -> {
                     if (payload.protocolVersion() != WebviewNetworking.PROTOCOL_VERSION) return;
@@ -211,6 +226,8 @@ public final class WebGUIClient
                 (payload, ctx) -> ctx.enqueueWork(() -> WebGUITrustedOrigins.set(payload.origins())));
         reg.playToClient(WebviewPayloads.WebviewDeathS2CPayload.TYPE, WebviewPayloads.WebviewDeathS2CPayload.STREAM_CODEC,
                 (payload, ctx) -> ctx.enqueueWork(() -> onDeathPayload(payload.url(), payload.infoJson())));
+        reg.playToClient(WebviewPayloads.WebviewHelloS2CPayload.TYPE, WebviewPayloads.WebviewHelloS2CPayload.STREAM_CODEC,
+                (payload, ctx) -> ctx.enqueueWork(() -> WebGUIHandshake.onHello(payload.protocolVersion(), payload.modVersion())));
     }
 
     // Swaps the vanilla death screen for the server's page. Fabric needs a mixin

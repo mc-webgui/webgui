@@ -47,6 +47,13 @@ public final class WebviewServerConfig {
     // Page shown instead of the vanilla death screen. Empty = keep the vanilla screen.
     private String deathScreenUrl = "";
 
+    // Refuse players whose client has no compatible WebGUI, instead of letting them in
+    // with a warning. Off by default: WebGUI enhances a client, it does not gate entry.
+    private Boolean requireClientMod;
+
+    // Page events accepted from one player per second; the rest are dropped. 0 = no limit.
+    private int pageEventsPerSecond = 20;
+
     // {"version":"1.2.3"} or GitHub Releases {"tag_name":"v1.2.3","html_url":"..."}; empty = disabled
     private String updateCheckUrl = "";
 
@@ -80,6 +87,9 @@ public final class WebviewServerConfig {
             o.addProperty("mainMenuUrl", "http://your-site.example/menu");
 
             o.addProperty("deathScreenUrl", "");
+
+            o.addProperty("requireClientMod", false);
+            o.addProperty("pageEventsPerSecond", 20);
 
             o.addProperty("updateCheckUrl", "");
 
@@ -211,6 +221,23 @@ public final class WebviewServerConfig {
     public static String deathScreenUrl() {
         String u = instance.deathScreenUrl;
         return u == null ? "" : u.trim();
+    }
+
+    /**
+     * Whether a client without a compatible WebGUI is refused rather than warned.
+     *
+     * Default off. A server that opens pages the player cannot see still works — they
+     * just miss the pages — so kicking them is a policy the owner opts into, not
+     * something the mod decides for them.
+     */
+    public static boolean requireClientMod() {
+        Boolean v = instance.requireClientMod;
+        return v != null && v;
+    }
+
+    /** Page events accepted from one player per second; 0 means no limit. */
+    public static int pageEventsPerSecond() {
+        return Math.max(0, instance.pageEventsPerSecond);
     }
 
     public static String updateCheckUrl() {
