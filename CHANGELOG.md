@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.7.1 - 2026-09-09
 
 ### Added
 - **Custom death screen.** Set `deathScreenUrl` in `config/webgui/server.json` and the vanilla death screen is replaced by your page. Leave it empty and nothing changes — the feature is opt-in because replacing that screen takes away the player's only way to respawn.
@@ -8,6 +8,18 @@
   - `window.webgui.respawn()` respawns the player, standing in for the vanilla Respawn button.
   - Escape does not close the page, exactly as the vanilla screen refuses to close. If the page fails to load, Escape starts working again and respawns instead, so a broken page can never trap a player.
   - The vanilla screen is left alone while the browser is still starting, so dying during the first seconds of a session shows the normal screen rather than nothing.
+- **Version mismatches now say so.** The server introduces itself on join, and a client whose WebGUI speaks a different protocol gets a message naming both versions instead of watching pages quietly fail to open.
+- **`requireClientMod`** in `config/webgui/server.json` (default `false`). When enabled, players without a compatible WebGUI are refused with a message that names this mod and the version the server runs.
+- **`pageEventsPerSecond`** in `config/webgui/server.json` (default `20`, `0` disables). Caps how many `postToGame` messages one player's pages may send per second.
+- **One JavaScript library: [`@webgui/client`](https://www.npmjs.com/package/@webgui/client).** Plain JS, React, Vue and Svelte in a single package with subpath imports (`@webgui/client/react` and so on). `@webgui/react`, `@webgui/vue` and `@webgui/svelte` were three parallel implementations of the same logic that had to be updated together for every new event; they still install and work, now as re-exports.
+- The mod leaves the last death payload on `window.webgui.death`, the way it already did for `client` and `entity`, so a page whose bundle starts listening after the event has fired can still read it.
+
+### Changed
+- **A NeoForge server no longer refuses clients that lack WebGUI.** Its channels were registered as required, so anyone without the mod — or with an older build of it — was disconnected with *"Incompatible client! Please use NeoForge &lt;version&gt;"*, which blames the wrong mod. They now join and are told, in chat, what the server runs and what they are missing. Set `requireClientMod: true` to keep turning them away, with a message that actually explains why.
+
+### Fixed
+- **Fixed the death screen arriving late on NeoForge.** The page URL was pushed on join on Fabric but not on NeoForge, where the client only learned about it from the death packet itself.
+- Fixed a page event flood from one player being able to saturate the server thread.
 
 ## 1.7.0 - 2026-09-08
 
