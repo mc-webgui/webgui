@@ -59,11 +59,13 @@ public final class WebviewClientBridge {
 
         RinkuBrowser main = WebSession.browser();
         RinkuBrowser hud  = WebSession.hudBrowser();
-        //? if fabric {
+        // isTextureReady on both loaders, not getRenderer().getTextureID() != 0 on one of
+        // them. Rinku 3 keeps the browser's texture as a Blaze3D GpuTexture, which need
+        // not have a raw GL id at all — on NeoForge 1.21.11 that id stayed 0, so this test
+        // never passed and the page received exactly one payload, the one pushed when its
+        // document loaded. Position, health, everything: frozen at the value it had on
+        // open, with nothing in the log to say so.
         boolean hasMain = main != null && (!requireTexture || main.isTextureReady());
-        //? } else {
-        /*boolean hasMain = main != null && (!requireTexture || main.getRenderer().getTextureID() != 0);*/
-        //? }
         boolean hasHud  = hud  != null && hud != main;
         if (!hasMain && !hasHud) return;
 
@@ -145,6 +147,7 @@ public final class WebviewClientBridge {
         // camera every frame. A marker drawn from this drifts a little during a sprint and
         // is exact when standing still.
         o.addProperty("fov", fov(client));
+        o.add("lookingAt", buildLookingAt(client, player));
 
         JsonObject server = buildServerInfo(client);
         if (server != null) o.add("server", server);
@@ -155,6 +158,59 @@ public final class WebviewClientBridge {
     /** Vertical field of view in degrees, as the player set it. */
     private static int fov(MinecraftClient client) {
         return client.options.getFov().getValue();
+    }
+
+    /**
+     * What the crosshair is on, if anything.
+     *
+     * The game already computes this every frame for its own use — the block outline, the
+     * name above a mob, what a click would hit — so this is that same answer rather than a
+     * second ray cast with its own idea of reach.
+     *
+     * Always present, with {@code type: "none"} when the player is looking at nothing. A
+     * field that disappears makes every page write the same optional-chaining dance.
+     */
+    private static JsonObject buildLookingAt(MinecraftClient client, ClientPlayerEntity player) {
+        JsonObject o = new JsonObject();
+        net.minecraft.util.hit.HitResult hit = client.crosshairTarget;
+        if (hit == null || hit.getType() == net.minecraft.util.hit.HitResult.Type.MISS) {
+            o.addProperty("type", "none");
+            return o;
+        }
+
+        o.addProperty("distance", Math.sqrt(player.getEyePos().squaredDistanceTo(hit.getPos())));
+
+        if (hit instanceof net.minecraft.util.hit.BlockHitResult block) {
+            o.addProperty("type", "block");
+            net.minecraft.util.math.BlockPos at = block.getBlockPos();
+            JsonObject pos = new JsonObject();
+            pos.addProperty("x", at.getX());
+            pos.addProperty("y", at.getY());
+            pos.addProperty("z", at.getZ());
+            o.add("pos", pos);
+            o.addProperty("face", block.getSide().asString());
+            var world = player.getEntityWorld();
+            o.addProperty("block", net.minecraft.registry.Registries.BLOCK
+                    .getId(world.getBlockState(at).getBlock()).toString());
+            return o;
+        }
+
+        if (hit instanceof net.minecraft.util.hit.EntityHitResult entityHit) {
+            var entity = entityHit.getEntity();
+            o.addProperty("type", "entity");
+            o.addProperty("uuid", entity.getUuid().toString());
+            o.addProperty("entityType", net.minecraft.entity.EntityType.getId(entity.getType()).toString());
+            o.addProperty("name", entity.getName().getString());
+            JsonObject pos = new JsonObject();
+            pos.addProperty("x", entity.getX());
+            pos.addProperty("y", entity.getY());
+            pos.addProperty("z", entity.getZ());
+            o.add("pos", pos);
+            return o;
+        }
+
+        o.addProperty("type", "none");
+        return o;
     }
 
     private static JsonObject buildServerInfo(MinecraftClient client) {
@@ -207,6 +263,7 @@ public final class WebviewClientBridge {
         // The one camera value a page cannot work out for itself - see the note on the
         // Fabric side of this method.
         o.addProperty("fov", fov(client));
+        o.add("lookingAt", buildLookingAt(client, player));
 
         JsonObject server = buildServerInfo(client);
         if (server != null) o.add("server", server);
@@ -217,6 +274,52 @@ public final class WebviewClientBridge {
     // Vertical field of view in degrees, as the player set it.
     private static int fov(Minecraft client) {
         return client.options.fov().get();
+    }
+
+    // What the crosshair is on, if anything. This is the game's own answer, the one it
+    // uses for the block outline and the name above a mob, rather than a second ray cast
+    // with its own idea of reach. Always present, with type "none" for nothing - a field
+    // that disappears makes every page write the same optional-chaining dance.
+    private static JsonObject buildLookingAt(Minecraft client, LocalPlayer player) {
+        JsonObject o = new JsonObject();
+        net.minecraft.world.phys.HitResult hit = client.hitResult;
+        if (hit == null || hit.getType() == net.minecraft.world.phys.HitResult.Type.MISS) {
+            o.addProperty("type", "none");
+            return o;
+        }
+
+        o.addProperty("distance", Math.sqrt(player.getEyePosition().distanceToSqr(hit.getLocation())));
+
+        if (hit instanceof net.minecraft.world.phys.BlockHitResult block) {
+            o.addProperty("type", "block");
+            net.minecraft.core.BlockPos at = block.getBlockPos();
+            JsonObject pos = new JsonObject();
+            pos.addProperty("x", at.getX());
+            pos.addProperty("y", at.getY());
+            pos.addProperty("z", at.getZ());
+            o.add("pos", pos);
+            o.addProperty("face", block.getDirection().getName());
+            o.addProperty("block", net.minecraft.core.registries.BuiltInRegistries.BLOCK
+                    .getKey(player.level().getBlockState(at).getBlock()).toString());
+            return o;
+        }
+
+        if (hit instanceof net.minecraft.world.phys.EntityHitResult entityHit) {
+            var entity = entityHit.getEntity();
+            o.addProperty("type", "entity");
+            o.addProperty("uuid", entity.getStringUUID());
+            o.addProperty("entityType", net.minecraft.world.entity.EntityType.getKey(entity.getType()).toString());
+            o.addProperty("name", entity.getName().getString());
+            JsonObject pos = new JsonObject();
+            pos.addProperty("x", entity.getX());
+            pos.addProperty("y", entity.getY());
+            pos.addProperty("z", entity.getZ());
+            o.add("pos", pos);
+            return o;
+        }
+
+        o.addProperty("type", "none");
+        return o;
     }
 
     private static JsonObject buildServerInfo(Minecraft client) {
