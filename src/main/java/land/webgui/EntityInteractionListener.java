@@ -44,10 +44,15 @@ public final class EntityInteractionListener {
 
     private static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
         if (event.getHand() != InteractionHand.MAIN_HAND) return;
+
+        // The event fires on both sides, and on the client the player is a LocalPlayer.
+        // Casting it crashed the game on the first right click of a bound entity. Only the
+        // server can open a gui for a player anyway, which is what the Fabric side does.
+        if (!(event.getEntity() instanceof ServerPlayer sp)) return;
+
         var opt = EntityBindingStore.get(event.getTarget().getUUID());
         if (opt.isEmpty()) return;
 
-        ServerPlayer sp = (ServerPlayer) event.getEntity();
         EntityBinding b = opt.get();
         String url = WebviewPlaceholders.resolve(b.urlTemplate(), sp, event.getTarget());
         String entityJson = WebviewEntityContext.buildJson(event.getTarget());
