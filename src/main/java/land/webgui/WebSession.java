@@ -71,11 +71,17 @@ public final class WebSession {
     }
 
     public static RinkuBrowser openForGui(String url) {
-        closeSuspendedHudBrowser();
         if (mode == Mode.HUD_OVERLAY && browser != null) {
+            // Coming from the hud: park it. Nothing should already be parked in this mode,
+            // but closing first keeps that from becoming a leak if it ever is.
+            closeSuspendedHudBrowser();
             suspendedHudBrowser = browser;
             browser = null;
         } else {
+            // One gui replacing another, which is ordinary: dying with a gui open does it.
+            // Only the outgoing gui is closed here - whatever hud is parked belongs to
+            // whoever opened the first gui, and closing it here left the player with no
+            // hud at all once they escaped out.
             closeActiveBrowser();
         }
         browser = Rinku.createBrowser(WebGUIAssetServer.resolve(url), true);
