@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.8.1 - 2026-09-12
+
+### Fixed
+- **Right clicking an entity with a page bound to it crashed the game on NeoForge.** The interaction event arrives on both the client and the server, and the client's copy was being handed to code that only a server can run: the first click on a bound entity took the whole client down. Fabric was never affected.
+- **A page opened from an entity was told nothing about the entity.** `window.webgui.entity` was `null`, so one page bound to several NPCs had no way to tell which of them had been clicked. The entity was sent a moment before the screen that needed it, and opening that screen threw it away.
+- **The HUD disappeared when one page replaced another.** Dying with a shop open — the death screen replaces the shop — or simply sending a second `/webgui gui` destroyed the HUD, and it stayed gone until the server sent it again.
+- The pages a server hosts kept being served for a moment after the player left that server, on a token that leaving was supposed to revoke.
+
 ## 1.8.0 - 2026-09-10
 
 ### Added

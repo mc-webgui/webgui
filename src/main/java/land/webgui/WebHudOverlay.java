@@ -319,7 +319,12 @@ public final class WebHudOverlay {
     //? } else {
     /*public static void onGuiOpened() {*/
     //? }
-        restoreHudAfterGuiClose = hudVisible && WebSession.mode() == WebSession.Mode.HUD_OVERLAY;
+        // Only decided when a gui is opening over the hud. A gui replacing another gui
+        // runs this too, and by then the mode is already GUI_SCREEN, so recomputing it
+        // here answered "there is no hud to put back" and threw the parked one away.
+        if (WebSession.mode() == WebSession.Mode.HUD_OVERLAY) {
+            restoreHudAfterGuiClose = hudVisible;
+        }
         hudInteractive = false;
         lastPixelW = -1;
         lastPixelH = -1;

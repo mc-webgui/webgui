@@ -205,7 +205,6 @@ public final class WebviewNetworking {
     }
 
     public static void openGuiForEntity(ServerPlayerEntity player, String url, String entityJson) {
-        sendEntityContext(player, entityJson);
         //? if >=1.20.5 {
         ServerPlayNetworking.send(player, new WebviewPayloads.OpenWebS2CPayload(PROTOCOL_VERSION, MODE_GUI, withPlayerToken(player, url)));
         //? } else {
@@ -215,6 +214,11 @@ public final class WebviewNetworking {
         buf.writeString(withPlayerToken(player, url), MAX_URL_LENGTH);
         ServerPlayNetworking.send(player, WebviewPayloads.OPEN_WEB_CHANNEL, buf);*/
         //? }
+        // The context goes out after the open, not before it. Opening a gui builds a new
+        // browser and clears the client's push cache, and the entity context lives in that
+        // cache: sent first, it was wiped by the very screen it was meant for, and the page
+        // received null. Packets on one connection keep their order, so this arrives after.
+        sendEntityContext(player, entityJson);
     }
 
     public static void sendEntityContext(ServerPlayerEntity player, String entityJson) {
@@ -427,8 +431,12 @@ public final class WebviewNetworking {
     }
 
     public static void openGuiForEntity(ServerPlayer player, String url, String entityJson) {
-        sendEntityContext(player, entityJson);
         PacketDistributor.sendToPlayer(player, new WebviewPayloads.OpenWebS2CPayload(PROTOCOL_VERSION, MODE_GUI, withPlayerToken(player, url)));
+        // The context goes out after the open, not before it. Opening a gui builds a new
+        // browser and clears the client's push cache, and the entity context lives in that
+        // cache: sent first, it was wiped by the very screen it was meant for, and the page
+        // received null. Packets on one connection keep their order, so this arrives after.
+        sendEntityContext(player, entityJson);
     }
 
     public static void sendEntityContext(ServerPlayer player, String entityJson) {

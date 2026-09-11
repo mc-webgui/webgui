@@ -37,9 +37,12 @@ public final class WebGUIAssetServer {
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
-    private static HttpServer server;
-    private static int port;
-    private static String sessionToken = "";
+    // Volatile because the eight threads serving requests read these without holding the
+    // lock the writers take: without it a request thread can keep honouring a token that
+    // leaving a server has already revoked.
+    private static volatile HttpServer server;
+    private static volatile int port;
+    private static volatile String sessionToken = "";
     /** Paths already reported as missing, so one broken build logs each name once. */
     private static final java.util.Set<String> WARNED = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
