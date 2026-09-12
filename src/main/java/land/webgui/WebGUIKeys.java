@@ -30,9 +30,11 @@ public final class WebGUIKeys {
     //? if fabric {
     private static KeyBinding mainMenu;
     private static KeyBinding hudInteractive;
+    private static KeyBinding devtools;
     //? } else {
     /*private static KeyMapping mainMenu;
-    private static KeyMapping hudInteractive;*/
+    private static KeyMapping hudInteractive;
+    private static KeyMapping devtools;*/
     //? }
 
     private WebGUIKeys() {}
@@ -51,6 +53,11 @@ public final class WebGUIKeys {
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_GRAVE_ACCENT,
                 cat));
+        devtools = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.webgui.devtools",
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_F12,
+                cat));
         //? } else {
         /*mainMenu = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.webgui.main_menu",
@@ -61,6 +68,11 @@ public final class WebGUIKeys {
                 "key.webgui.hud_interactive",
                 InputUtil.Type.KEYSYM,
                 GLFW.GLFW_KEY_GRAVE_ACCENT,
+                WebGUIMod.MOD_ID + ".web"));
+        devtools = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.webgui.devtools",
+                InputUtil.Type.KEYSYM,
+                GLFW.GLFW_KEY_F12,
                 WebGUIMod.MOD_ID + ".web"));*/
         //? }
     }
@@ -74,12 +86,15 @@ public final class WebGUIKeys {
         KeyMapping.Category cat = KeyMapping.Category.register(Identifier.fromNamespaceAndPath(WebGUIMod.MOD_ID, "web"));
         mainMenu = new KeyMapping("key.webgui.main_menu", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_F6, cat);
         hudInteractive = new KeyMapping("key.webgui.hud_interactive", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_GRAVE_ACCENT, cat);
+        devtools = new KeyMapping("key.webgui.devtools", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_F12, cat);
         //? } else {
         mainMenu = new KeyMapping("key.webgui.main_menu", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_F6, WebGUIMod.MOD_ID + ".web");
         hudInteractive = new KeyMapping("key.webgui.hud_interactive", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_GRAVE_ACCENT, WebGUIMod.MOD_ID + ".web");
+        devtools = new KeyMapping("key.webgui.devtools", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_F12, WebGUIMod.MOD_ID + ".web");
         //? }
         event.register(mainMenu);
         event.register(hudInteractive);
+        event.register(devtools);
     }*/
     //? }
 
@@ -109,6 +124,15 @@ public final class WebGUIKeys {
                 continue;
             }
             WebHudOverlay.toggleInteractive(client);
+        }
+        //? if fabric {
+        while (devtools.wasPressed()) {
+        //? } else {
+        /*while (devtools.consumeClick()) {*/
+        //? }
+            // The screen has its own F12: a page in a screen gets the key before any key
+            // binding does, so this is only ever the HUD.
+            WebGUIDevToolsWindow.open(WebSession.hudBrowser());
         }
     }
 

@@ -1,6 +1,7 @@
 {
   "key.webgui.main_menu": "Главное меню",
   "key.webgui.hud_interactive": "HUD: интерактивный режим",
+  "key.webgui.devtools": "Инструменты разработчика",
   "key.categories.webgui.web": "WebGUI",
   "screen.webgui.title": "Веб",
   "screen.webgui.url": "URL",

@@ -1,6 +1,7 @@
 {
   "key.webgui.main_menu": "Main menu",
   "key.webgui.hud_interactive": "HUD: interactive mode",
+  "key.webgui.devtools": "Developer tools",
   "key.categories.webgui.web": "WebGUI",
   "screen.webgui.title": "Web",
   "screen.webgui.url": "URL",

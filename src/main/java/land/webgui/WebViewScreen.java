@@ -2,6 +2,7 @@ package land.webgui;
 
 import de.keksuccino.rinku.Rinku;
 import de.keksuccino.rinku.RinkuBrowser;
+import org.lwjgl.glfw.GLFW;
 //? if >=1.21.5 {
 //? if fabric {
 import net.minecraft.client.gl.RenderPipelines;
@@ -380,6 +381,10 @@ public class WebViewScreen extends Screen {
     public boolean keyPressed(KeyInput input) {
         if (super.keyPressed(input)) return true;
         if (browser == null) return false;
+        if (input.key() == GLFW.GLFW_KEY_F12) {
+            WebGUIDevToolsWindow.open(browser);
+            return true;
+        }
         browser.sendKeyPress(input.key(), input.scancode(), input.modifiers());
         browser.setFocus(true);
         return true;
@@ -409,6 +414,10 @@ public class WebViewScreen extends Screen {
     public boolean keyPressed(KeyEvent input) {
         if (super.keyPressed(input)) return true;
         if (browser == null) return false;
+        if (input.key() == GLFW.GLFW_KEY_F12) {
+            WebGUIDevToolsWindow.open(browser);
+            return true;
+        }
         browser.sendKeyPress(input.key(), input.scancode(), input.modifiers());
         browser.setFocus(true);
         return true;
@@ -446,6 +455,10 @@ public class WebViewScreen extends Screen {
         }
         if (browser == null) {
             return false;
+        }
+        if (keyCode == GLFW.GLFW_KEY_F12) {
+            WebGUIDevToolsWindow.open(browser);
+            return true;
         }
         browser.sendKeyPress(keyCode, scanCode, modifiers);
         browser.setFocus(true);
