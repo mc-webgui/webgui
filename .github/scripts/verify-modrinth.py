@@ -16,6 +16,9 @@ EXPECTED = {
     "mc1.21.11-neoforge": ("neoforge", "1.21.11"),
     "mc26.1.2-neoforge":  ("neoforge", "26.1.2"),
     "mc26.2-neoforge":    ("neoforge", "26.2"),
+    "mc26.2-fabric":      ("fabric",   "26.2"),
+    "mc26.3-fabric":      ("fabric",   "26.3"),
+    "mc26.3-neoforge":    ("neoforge", "26.3"),
 }
 
 
