@@ -42,7 +42,7 @@ public final class WebviewServerConfig {
     private Boolean autoHudOnJoin;
     private String autoHudUrl = "";
 
-    private String mainMenuUrl = "";
+    private String mainMenuUrl = "webgui://index.html";
 
     // Page shown instead of the vanilla death screen. Empty = keep the vanilla screen.
     private String deathScreenUrl = "";
@@ -93,7 +93,7 @@ public final class WebviewServerConfig {
             o.addProperty("autoHudOnJoin", false);
             o.addProperty("autoHudUrl", "http://your-site.example/hud");
 
-            o.addProperty("mainMenuUrl", "http://your-site.example/menu");
+            o.addProperty("mainMenuUrl", "webgui://index.html");
 
             o.addProperty("deathScreenUrl", "");
 

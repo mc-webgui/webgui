@@ -134,7 +134,7 @@ public final class WebviewAssets {
                 <div>
                   <h1>It works.</h1>
                   <p>This page came from <code>config/webgui/web/index.html</code> on the server.</p>
-                  <p>Point <code>mainMenuUrl</code> at <code>webgui:/index.html</code> and edit away.</p>
+                  <p><code>mainMenuUrl</code> already points here. Edit this file and reload.</p>
                   <p id="who"></p>
                 </div>
                 <script>

@@ -31,7 +31,7 @@ public final class WebviewScriptInject {
                   // needs to know which one it is in.
                   window.webgui.isHud = %s;""".formatted(base, hudMode) + """
 
-                  // webgui:whatever.html, as a link a page can actually click.
+                  // webgui://whatever.html, as a link a page can actually click.
                   //
                   // The scheme is this mod's shorthand for "a file this server ships"; the
                   // browser knows nothing about it, so written in an href it would simply
@@ -42,13 +42,10 @@ public final class WebviewScriptInject {
                     window.webgui.resolve = function (url) {
                       if (typeof url !== 'string') return url;
                       var trimmed = url.trim();
-                      if (!/^webgui:/i.test(trimmed)) return trimmed;
+                      if (!/^webgui:[/][/]/i.test(trimmed)) return trimmed;
                       var base = window.webgui.assetsBase || '';
                       if (!base) return trimmed;
-                      // webgui:x, webgui:/x and webgui://x mean the same thing: the
-                      // difference is invisible in a config file and nobody would guess right.
-                      var rest = trimmed.slice(7);
-                      while (rest.charAt(0) === '/') rest = rest.slice(1);
+                      var rest = trimmed.slice(9);
                       if (rest === '' || rest.charAt(0) === '?') rest = 'index.html' + rest;
                       while (base.charAt(base.length - 1) === '/') base = base.slice(0, -1);
                       return base + '/' + rest;
@@ -64,7 +61,7 @@ public final class WebviewScriptInject {
                       while (node && node.nodeType === 1 && node.tagName !== 'A') node = node.parentNode;
                       if (!node || node.nodeType !== 1) return;
                       var href = node.getAttribute('href');
-                      if (!href || !/^webgui:/i.test(href)) return;
+                      if (!href || !/^webgui:[/][/]/i.test(href)) return;
                       var resolved = window.webgui.resolve(href);
                       if (resolved === href) return;
                       ev.preventDefault();

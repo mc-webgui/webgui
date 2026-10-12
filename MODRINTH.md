@@ -50,7 +50,7 @@ Opening a page is one command:
 
 ```
 /webgui gui @a https://your-site.example/shop
-/webgui hud @a webgui:/hud.html
+/webgui hud @a webgui://hud.html
 ```
 
 Pages can also be bound to an entity, so right-clicking a villager opens your shop with that villager's context. Every URL the mod opens carries a signed token, so your backend knows which player is asking without a login screen. Players without the mod are told what they are missing instead of quietly seeing nothing.

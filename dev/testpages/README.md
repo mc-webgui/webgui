@@ -27,6 +27,6 @@ The death page is the one that needs more than copying: the server only suppress
 vanilla screen when it has been asked to, so set it in `config/webgui/server.json` and
 reload. No reconnect — `reload` pushes the url to everyone already online.
 
-    "deathScreenUrl": "webgui:/death.html"
+    "deathScreenUrl": "webgui://death.html"
 
     /webgui reload

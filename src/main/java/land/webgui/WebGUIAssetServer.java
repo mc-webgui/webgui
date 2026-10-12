@@ -11,6 +11,7 @@ import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.concurrent.Executors;
 
 /**
@@ -133,23 +134,34 @@ public final class WebGUIAssetServer {
         sessionToken = HexFormat.of().formatHex(raw);
     }
 
+    /** The schemes a page may be opened from. Everything else is refused. */
+    private static final List<String> REMOTE_SCHEMES = List.of("https://", "http://", "wss://", "ws://");
+
     /**
-     * Turns {@code webgui:/path} into a URL the browser can load.
+     * Turns {@code webgui://path} into a URL the browser can load, and refuses anything that
+     * is not a page.
      *
-     * Anything else is returned untouched — an http(s) URL is a page hosted the ordinary
-     * way, and that has to keep working exactly as it did.
+     * A remote URL passes through untouched — that is a page hosted the ordinary way. Any
+     * other scheme is refused rather than loaded: a page URL arrives from a server, and
+     * {@code file://} would read the player's disk while {@code javascript:} would run in
+     * whatever page is open.
      */
     public static String resolve(String url) {
         if (url == null || url.isBlank()) {
             return url;
         }
         String trimmed = url.trim();
-        if (!trimmed.regionMatches(true, 0, "webgui:", 0, 7)) {
-            return trimmed;
+        for (String scheme : REMOTE_SCHEMES) {
+            if (trimmed.regionMatches(true, 0, scheme, 0, scheme.length())) {
+                return trimmed;
+            }
         }
-        String rest = trimmed.substring(7);
-        // Accept webgui:/index.html, webgui://index.html and webgui:index.html alike:
-        // the difference is invisible in a config file and nobody would guess right.
+        if (!trimmed.regionMatches(true, 0, "webgui://", 0, 9)) {
+            WebGUIMod.LOGGER.warn("webgui: refusing to open {} - a page must be webgui://,"
+                    + " https://, http://, wss:// or ws://", trimmed);
+            return "about:blank";
+        }
+        String rest = trimmed.substring(9);
         String query = "";
         int mark = rest.indexOf('?');
         if (mark >= 0) {
