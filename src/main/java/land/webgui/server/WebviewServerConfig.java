@@ -40,7 +40,7 @@ public final class WebviewServerConfig {
     private String tokenSecretBase64 = "";
 
     private Boolean autoHudOnJoin;
-    private String autoHudUrl = "";
+    private String autoHudUrl = "webgui://hud.html";
 
     private String mainMenuUrl = "webgui://index.html";
 
@@ -91,7 +91,7 @@ public final class WebviewServerConfig {
             o.addProperty("tokenSecretBase64", "<base64-encoded 32-byte secret — auto-generated in server.json>");
 
             o.addProperty("autoHudOnJoin", false);
-            o.addProperty("autoHudUrl", "http://your-site.example/hud");
+            o.addProperty("autoHudUrl", "webgui://hud.html");
 
             o.addProperty("mainMenuUrl", "webgui://index.html");
 

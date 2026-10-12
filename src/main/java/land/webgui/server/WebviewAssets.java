@@ -52,6 +52,7 @@ public final class WebviewAssets {
             if (!Files.exists(root)) {
                 Files.createDirectories(root);
                 writeStarterPage(root);
+                writeStarterHud(root);
             }
         } catch (IOException e) {
             WebGUIMod.LOGGER.warn("webgui: could not create {}: {}", root, e.getMessage());
@@ -144,5 +145,44 @@ public final class WebviewAssets {
                 </script>
                 """);
         WebGUIMod.LOGGER.info("webgui: created a starter page at {}", index);
+    }
+
+    // An overlay, not a screen: it is drawn over the world, so it paints no background of its
+    // own and keeps to a corner. A background on html or body would hide the game.
+    private static void writeStarterHud(Path root) throws IOException {
+        Path hud = root.resolve("hud.html");
+        if (Files.exists(hud)) {
+            return;
+        }
+        Files.writeString(hud, """
+                <!doctype html>
+                <meta charset="utf-8">
+                <title>WebGUI HUD</title>
+                <style>
+                  html, body { margin:0; background:transparent;
+                               font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+                  .card { position:fixed; top:10px; left:10px; max-width:330px;
+                          background:rgba(17,19,24,.72); color:#e8e8ea;
+                          border:1px solid rgba(255,255,255,.12); border-radius:8px;
+                          padding:10px 12px; font-size:13px; line-height:1.6; }
+                  .card b { display:block; margin-bottom:4px; }
+                  .dim { color:#99a1b3; }
+                  a { color:#7aa2f7; }
+                  kbd { background:#1e2129; border:1px solid rgba(255,255,255,.18);
+                        border-radius:4px; padding:1px 5px; font-size:12px;
+                        font-family: ui-monospace, Consolas, monospace; }
+                  code { color:#99a1b3; font-family: ui-monospace, Consolas, monospace; }
+                </style>
+                <div class="card">
+                  <b>WebGUI</b>
+                  <div><kbd>F6</kbd> main menu &middot; <kbd>`</kbd> interact with this overlay
+                       &middot; <kbd>F12</kbd> developer tools</div>
+                  <div class="dim" style="margin-top:6px">
+                    This overlay is <code>config/webgui/web/hud.html</code> on the server.
+                    Guides at <a href="https://webgui.space">webgui.space</a>.
+                  </div>
+                </div>
+                """);
+        WebGUIMod.LOGGER.info("webgui: created a starter HUD page at {}", hud);
     }
 }
