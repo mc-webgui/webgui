@@ -58,7 +58,7 @@ public final class WebviewPageToClientBridge {
         JsonObject obj = tryParseObject(request);
 
         if (obj == null) {
-            WebGUIMod.LOGGER.info("[webgui page→game] {}", request);
+            WebGUIMod.LOGGER.debug("[webgui page→game] {}", request);
             callback.success("{\"ok\":true}");
             return;
         }
@@ -145,7 +145,7 @@ public final class WebviewPageToClientBridge {
                     String pay = request;
                     mc.execute(() -> sendToServer(ch, pay));
                 } else {
-                    WebGUIMod.LOGGER.info("[webgui page→game] [{}] {}", channel, request);
+                    WebGUIMod.LOGGER.debug("[webgui page→game] [{}] {}", channel, request);
                 }
             }
         }

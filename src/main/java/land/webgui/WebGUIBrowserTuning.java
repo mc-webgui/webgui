@@ -31,7 +31,7 @@ public final class WebGUIBrowserTuning {
             int target = WebGUIClientConfig.browserFrameRate();
             if (target > 0) {
                 browser.setWindowlessFrameRate(target);
-                WebGUIMod.LOGGER.info("webgui: browser paint rate asked for {} fps", target);
+                WebGUIMod.LOGGER.debug("webgui: browser paint rate asked for {} fps", target);
             }
         } catch (Throwable t) {
             WebGUIMod.LOGGER.warn("webgui: could not set the browser paint rate: {}", t.toString());

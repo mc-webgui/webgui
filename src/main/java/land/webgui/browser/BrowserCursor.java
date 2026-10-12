@@ -52,12 +52,12 @@ final class BrowserCursor {
         //? if >26.2 {
         /*shape = shapeFor(wanted);
         if (SEEN.add(wanted)) {
-            land.webgui.WebGUIMod.LOGGER.info("webgui: cursor \"{}\" -> {}", wanted, shape);
+            land.webgui.WebGUIMod.LOGGER.debug("webgui: cursor \"{}\" -> {}", wanted, shape);
         }
         *///? } else {
         long handle = shapeFor(wanted);
         if (SEEN.add(wanted)) {
-            land.webgui.WebGUIMod.LOGGER.info("webgui: cursor \"{}\" -> {}",
+            land.webgui.WebGUIMod.LOGGER.debug("webgui: cursor \"{}\" -> {}",
                     wanted, handle == 0L ? "no shape, left as the arrow" : "a shape of its own");
         }
         apply(handle);
