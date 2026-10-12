@@ -1,6 +1,6 @@
 package land.webgui;
 
-import de.keksuccino.rinku.RinkuBrowser;
+import land.webgui.browser.WebBrowser;
 
 /**
  * The inspector, in a window of its own, the way a browser opens it.
@@ -16,18 +16,19 @@ public final class WebGUIDevToolsWindow {
 
     private WebGUIDevToolsWindow() {}
 
-    /** Whether there was a page to open them for. */
-    public static boolean open(RinkuBrowser browser) {
+    /** Whether there was a page to ask about. The browser opens a moment later. */
+    public static boolean open(WebBrowser browser) {
         if (browser == null) {
             return false;
         }
-        try {
-            browser.openDevTools();
-            WebGUIMod.LOGGER.info("webgui devtools: opened the inspector for {}", browser.getURL());
-            return true;
-        } catch (Throwable t) {
-            WebGUIMod.LOGGER.warn("webgui devtools: could not open the inspector: {}", t.toString());
-            return false;
-        }
+        browser.openDevTools(why -> {
+            WebGUIMod.LOGGER.warn("webgui devtools: no inspector to open ({})", why);
+            // Said to the player, not only to the log. A key that answers nothing at all is
+            // indistinguishable from a key that is broken, and this one is off by default.
+            land.webgui.compat.Mc.tell("Inspector is off. Turn on \"Page developer tools\" in the mod settings"
+                    + " and restart the game.");
+        });
+        return true;
     }
+
 }

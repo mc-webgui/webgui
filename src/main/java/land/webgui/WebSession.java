@@ -1,11 +1,10 @@
 package land.webgui;
 
-import de.keksuccino.rinku.Rinku;
-import de.keksuccino.rinku.RinkuBrowser;
+import land.webgui.browser.WebBrowser;
 
 public final class WebSession {
-    private static RinkuBrowser browser;
-    private static RinkuBrowser suspendedHudBrowser;
+    private static WebBrowser browser;
+    private static WebBrowser suspendedHudBrowser;
     private static Mode mode = Mode.NONE;
 
     public enum Mode {
@@ -16,11 +15,11 @@ public final class WebSession {
 
     private WebSession() {}
 
-    public static RinkuBrowser browser() {
+    public static WebBrowser browser() {
         return browser;
     }
 
-    public static RinkuBrowser hudBrowser() {
+    public static WebBrowser hudBrowser() {
         if (mode == Mode.HUD_OVERLAY) {
             return browser;
         }
@@ -70,7 +69,7 @@ public final class WebSession {
         WebviewClientBridge.clearCache();
     }
 
-    public static RinkuBrowser openForGui(String url) {
+    public static WebBrowser openForGui(String url) {
         if (mode == Mode.HUD_OVERLAY && browser != null) {
             // Coming from the hud: park it. Nothing should already be parked in this mode,
             // but closing first keeps that from becoming a leak if it ever is.
@@ -84,13 +83,13 @@ public final class WebSession {
             // hud at all once they escaped out.
             closeActiveBrowser();
         }
-        browser = Rinku.createBrowser(WebGUIAssetServer.resolve(url), true);
+        browser = WebBrowser.create(WebGUIAssetServer.resolve(url), true);
         mode = Mode.GUI_SCREEN;
         WebviewClientBridge.clearCache();
         return browser;
     }
 
-    public static RinkuBrowser openForHud(String url) {
+    public static WebBrowser openForHud(String url) {
         closeSuspendedHudBrowser();
         if (mode == Mode.HUD_OVERLAY && browser != null) {
             browser.loadURL(WebGUIAssetServer.resolve(url));
@@ -98,7 +97,7 @@ public final class WebSession {
             return browser;
         }
         closeActiveBrowser();
-        browser = Rinku.createBrowser(WebGUIAssetServer.resolve(url), true);
+        browser = WebBrowser.create(WebGUIAssetServer.resolve(url), true);
         mode = Mode.HUD_OVERLAY;
         WebviewClientBridge.clearCache();
         return browser;
@@ -122,7 +121,7 @@ public final class WebSession {
         }
     }
 
-    private static boolean reloadIfBundled(RinkuBrowser target, String origin) {
+    private static boolean reloadIfBundled(WebBrowser target, String origin) {
         if (target == null) {
             return false;
         }

@@ -11,7 +11,9 @@
   "screen.webgui.settings.title": "Настройки WebGUI",
   "screen.webgui.settings.devtools": "Инструменты разработчика страниц",
   "screen.webgui.settings.devtools.hint1": "Пишет ошибки браузера, упавшие запросы и вывод консоли",
-  "screen.webgui.settings.devtools.hint2": "в лог игры. Нужно при разработке страниц, не для игры.",
+  "screen.webgui.settings.devtools.hint2": "С ней же F12 открывает инспектор. Применяется после перезапуска.",
   "screen.webgui.settings.inspector.on": "Chrome DevTools: откройте %s в браузере",
-  "screen.webgui.settings.inspector.off": "Для полного инспектора добавьте аргумент запуска игры:"
+  "screen.webgui.settings.inspector.off": "Для полного инспектора добавьте аргумент запуска игры:",
+  "screen.webgui.settings.scroll": "Скорость прокрутки",
+  "screen.webgui.settings.scroll.hint": "Насколько далеко страницу уносит один щелчок колеса."
 }

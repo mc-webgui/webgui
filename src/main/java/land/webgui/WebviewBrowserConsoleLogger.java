@@ -1,45 +1,27 @@
 package land.webgui;
 
-import org.cef.CefSettings;
-import org.cef.browser.CefBrowser;
-import org.cef.handler.CefDisplayHandlerAdapter;
+import land.webgui.browser.WebBrowser;
 import org.slf4j.Logger;
+import space.webgui.wmc.api.ConsoleLevel;
 
-public final class WebviewBrowserConsoleLogger extends CefDisplayHandlerAdapter {
+/** Puts what a page writes to its console into the game's log. */
+public final class WebviewBrowserConsoleLogger implements WebBrowser.Listener {
 
     private static final Logger LOG = WebGUIMod.LOGGER;
 
     @Override
-    public boolean onConsoleMessage(
-            CefBrowser browser,
-            CefSettings.LogSeverity level,
-            String message,
-            String source,
-            int line) {
+    public void onConsole(WebBrowser browser, ConsoleLevel level, String message,
+            String source, int line) {
         String text = formatMessage(message, source, line);
         if (level == null) {
-            level = CefSettings.LogSeverity.LOGSEVERITY_DEFAULT;
+            level = ConsoleLevel.INFO;
         }
         switch (level) {
-            case LOGSEVERITY_ERROR:
-            case LOGSEVERITY_FATAL:
-                LOG.error("[Web GUI] {}", text);
-                break;
-            case LOGSEVERITY_WARNING:
-                LOG.warn("[Web GUI] {}", text);
-                break;
-            case LOGSEVERITY_VERBOSE:
-                LOG.debug("[Web GUI] {}", text);
-                break;
-            case LOGSEVERITY_DISABLE:
-                break;
-            case LOGSEVERITY_DEFAULT:
-            case LOGSEVERITY_INFO:
-            default:
-                LOG.info("[Web GUI] {}", text);
-                break;
+            case ERROR -> LOG.error("[Web GUI] {}", text);
+            case WARNING -> LOG.warn("[Web GUI] {}", text);
+            case DEBUG -> LOG.debug("[Web GUI] {}", text);
+            default -> LOG.info("[Web GUI] {}", text);
         }
-        return false;
     }
 
     private static String formatMessage(String message, String source, int line) {

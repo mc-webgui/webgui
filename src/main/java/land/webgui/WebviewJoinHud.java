@@ -1,12 +1,11 @@
 package land.webgui;
 
 import land.webgui.server.WebviewServerConfig;
+import net.minecraft.server.level.ServerPlayer;
 //? if fabric {
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.minecraft.server.network.ServerPlayerEntity;
 //? } else {
-/*import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.common.NeoForge;
+/*import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;*/
 //? }
 
@@ -18,7 +17,7 @@ public final class WebviewJoinHud {
     public static void register() {
         ServerPlayConnectionEvents.JOIN.register(
                 (handler, sender, server) -> {
-                    ServerPlayerEntity player = handler.player;
+                    ServerPlayer player = handler.player;
                     if (player == null) {
                         return;
                     }
@@ -46,7 +45,7 @@ public final class WebviewJoinHud {
 
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             if (handler.player != null) {
-                land.webgui.server.WebviewRateLimiter.forget(handler.player.getUuid());
+                land.webgui.server.WebviewRateLimiter.forget(handler.player.getUUID());
             }
         });
     }

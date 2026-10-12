@@ -11,9 +11,9 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 //? } else {
 /*import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.network.PacketByteBuf;*/
+import net.minecraft.network.FriendlyByteBuf;*/
 //? }
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 //? } else {
 /*import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.IEventBus;
@@ -42,17 +42,24 @@ public final class WebviewNetworking {
     //? if fabric {
     public static void registerPayloadTypes() {
         //? if >=1.20.5 {
-        PayloadTypeRegistry.playS2C().register(WebviewPayloads.OpenWebS2CPayload.ID, WebviewPayloads.OpenWebS2CPayload.CODEC);
-        PayloadTypeRegistry.playS2C().register(WebviewPayloads.WebUIMainMenuPayload.ID, WebviewPayloads.WebUIMainMenuPayload.CODEC);
-        PayloadTypeRegistry.playS2C().register(WebviewPayloads.WebviewEmitS2CPayload.ID, WebviewPayloads.WebviewEmitS2CPayload.CODEC);
-        PayloadTypeRegistry.playS2C().register(WebviewPayloads.WebviewEntityContextS2CPayload.ID, WebviewPayloads.WebviewEntityContextS2CPayload.CODEC);
-        PayloadTypeRegistry.playS2C().register(WebviewPayloads.WebviewTrustedOriginsS2CPayload.ID, WebviewPayloads.WebviewTrustedOriginsS2CPayload.CODEC);
-        PayloadTypeRegistry.playS2C().register(WebviewPayloads.WebviewDeathS2CPayload.ID, WebviewPayloads.WebviewDeathS2CPayload.CODEC);
-        PayloadTypeRegistry.playS2C().register(WebviewPayloads.WebviewHelloS2CPayload.ID, WebviewPayloads.WebviewHelloS2CPayload.CODEC);
-        PayloadTypeRegistry.playS2C().register(WebviewPayloads.WebviewAssetManifestS2CPayload.ID, WebviewPayloads.WebviewAssetManifestS2CPayload.CODEC);
-        PayloadTypeRegistry.playS2C().register(WebviewPayloads.WebviewAssetChunkS2CPayload.ID, WebviewPayloads.WebviewAssetChunkS2CPayload.CODEC);
-        PayloadTypeRegistry.playC2S().register(WebviewPayloads.WebviewPageEventC2SPayload.ID, WebviewPayloads.WebviewPageEventC2SPayload.CODEC);
-        PayloadTypeRegistry.playC2S().register(WebviewPayloads.WebviewAssetRequestC2SPayload.ID, WebviewPayloads.WebviewAssetRequestC2SPayload.CODEC);
+        //? if >=26 {
+        /*var toClient = PayloadTypeRegistry.clientboundPlay();
+        var toServer = PayloadTypeRegistry.serverboundPlay();
+        *///? } else {
+        var toClient = PayloadTypeRegistry.playS2C();
+        var toServer = PayloadTypeRegistry.playC2S();
+        //? }
+        toClient.register(WebviewPayloads.OpenWebS2CPayload.TYPE, WebviewPayloads.OpenWebS2CPayload.STREAM_CODEC);
+        toClient.register(WebviewPayloads.WebUIMainMenuPayload.TYPE, WebviewPayloads.WebUIMainMenuPayload.STREAM_CODEC);
+        toClient.register(WebviewPayloads.WebviewEmitS2CPayload.TYPE, WebviewPayloads.WebviewEmitS2CPayload.STREAM_CODEC);
+        toClient.register(WebviewPayloads.WebviewEntityContextS2CPayload.TYPE, WebviewPayloads.WebviewEntityContextS2CPayload.STREAM_CODEC);
+        toClient.register(WebviewPayloads.WebviewTrustedOriginsS2CPayload.TYPE, WebviewPayloads.WebviewTrustedOriginsS2CPayload.STREAM_CODEC);
+        toClient.register(WebviewPayloads.WebviewDeathS2CPayload.TYPE, WebviewPayloads.WebviewDeathS2CPayload.STREAM_CODEC);
+        toClient.register(WebviewPayloads.WebviewHelloS2CPayload.TYPE, WebviewPayloads.WebviewHelloS2CPayload.STREAM_CODEC);
+        toClient.register(WebviewPayloads.WebviewAssetManifestS2CPayload.TYPE, WebviewPayloads.WebviewAssetManifestS2CPayload.STREAM_CODEC);
+        toClient.register(WebviewPayloads.WebviewAssetChunkS2CPayload.TYPE, WebviewPayloads.WebviewAssetChunkS2CPayload.STREAM_CODEC);
+        toServer.register(WebviewPayloads.WebviewPageEventC2SPayload.TYPE, WebviewPayloads.WebviewPageEventC2SPayload.STREAM_CODEC);
+        toServer.register(WebviewPayloads.WebviewAssetRequestC2SPayload.TYPE, WebviewPayloads.WebviewAssetRequestC2SPayload.STREAM_CODEC);
         //? }
     }
     //? } else {
@@ -128,21 +135,21 @@ public final class WebviewNetworking {
     //? if fabric {
     public static void registerServerReceivers() {
         //? if >=1.20.5 {
-        ServerPlayNetworking.registerGlobalReceiver(WebviewPayloads.WebviewPageEventC2SPayload.ID, (payload, context) -> {
-            ServerPlayerEntity player = context.player();
+        ServerPlayNetworking.registerGlobalReceiver(WebviewPayloads.WebviewPageEventC2SPayload.TYPE, (payload, context) -> {
+            ServerPlayer player = context.player();
             String channel = payload.channel();
             String json    = payload.jsonPayload();
             // Checked here, off the server thread: scheduling first would put the flood on
             // the tick loop, which is the thing being protected.
-            if (player == null || !land.webgui.server.WebviewRateLimiter.allowPageEvent(player.getUuid(), player.getName().getString())) {
+            if (player == null || !land.webgui.server.WebviewRateLimiter.allowPageEvent(player.getUUID(), player.getName().getString())) {
                 return;
             }
             context.server().execute(() ->
                     WebviewServerEvents.PAGE_EVENT.invoker().onPageEvent(player, channel, json));
         });
 
-        ServerPlayNetworking.registerGlobalReceiver(WebviewPayloads.WebviewAssetRequestC2SPayload.ID, (payload, context) -> {
-            ServerPlayerEntity player = context.player();
+        ServerPlayNetworking.registerGlobalReceiver(WebviewPayloads.WebviewAssetRequestC2SPayload.TYPE, (payload, context) -> {
+            ServerPlayer player = context.player();
             if (player == null) {
                 return;
             }
@@ -152,18 +159,18 @@ public final class WebviewNetworking {
         });
         //? } else {
         /*ServerPlayNetworking.registerGlobalReceiver(WebviewPayloads.PAGE_EVENT_CHANNEL, (server, player, handler, buf, responseSender) -> {
-            String channel = buf.readString(WebviewPayloads.MAX_EVENT_NAME_LENGTH);
-            String json    = buf.readString(WebviewPayloads.MAX_EVENT_DATA_LENGTH);
+            String channel = buf.readUtf(WebviewPayloads.MAX_EVENT_NAME_LENGTH);
+            String json    = buf.readUtf(WebviewPayloads.MAX_EVENT_DATA_LENGTH);
             // Checked here, off the server thread: scheduling first would put the flood on
             // the tick loop, which is the thing being protected.
-            if (player == null || !land.webgui.server.WebviewRateLimiter.allowPageEvent(player.getUuid(), player.getName().getString())) {
+            if (player == null || !land.webgui.server.WebviewRateLimiter.allowPageEvent(player.getUUID(), player.getName().getString())) {
                 return;
             }
             server.execute(() -> WebviewServerEvents.PAGE_EVENT.invoker().onPageEvent(player, channel, json));
         });
 
         ServerPlayNetworking.registerGlobalReceiver(WebviewPayloads.ASSET_REQUEST_CHANNEL, (server, player, handler, buf, responseSender) -> {
-            String path = buf.readString(WebviewPayloads.MAX_ASSET_PATH_LENGTH);
+            String path = buf.readUtf(WebviewPayloads.MAX_ASSET_PATH_LENGTH);
             if (player == null) {
                 return;
             }
@@ -178,40 +185,40 @@ public final class WebviewNetworking {
     //? }
 
     //? if fabric {
-    public static void openGui(ServerPlayerEntity player, String url) {
+    public static void openGui(ServerPlayer player, String url) {
         clearEntityContext(player);
         //? if >=1.20.5 {
         ServerPlayNetworking.send(player, new WebviewPayloads.OpenWebS2CPayload(PROTOCOL_VERSION, MODE_GUI, withPlayerToken(player, url)));
         //? } else {
-        /*PacketByteBuf buf = PacketByteBufs.create();
+        /*FriendlyByteBuf buf = PacketByteBufs.create();
         buf.writeVarInt(PROTOCOL_VERSION);
         buf.writeVarInt(MODE_GUI);
-        buf.writeString(withPlayerToken(player, url), MAX_URL_LENGTH);
+        buf.writeUtf(withPlayerToken(player, url), MAX_URL_LENGTH);
         ServerPlayNetworking.send(player, WebviewPayloads.OPEN_WEB_CHANNEL, buf);*/
         //? }
     }
 
-    public static void openHud(ServerPlayerEntity player, String url) {
+    public static void openHud(ServerPlayer player, String url) {
         clearEntityContext(player);
         //? if >=1.20.5 {
         ServerPlayNetworking.send(player, new WebviewPayloads.OpenWebS2CPayload(PROTOCOL_VERSION, MODE_HUD, withPlayerToken(player, url)));
         //? } else {
-        /*PacketByteBuf buf = PacketByteBufs.create();
+        /*FriendlyByteBuf buf = PacketByteBufs.create();
         buf.writeVarInt(PROTOCOL_VERSION);
         buf.writeVarInt(MODE_HUD);
-        buf.writeString(withPlayerToken(player, url), MAX_URL_LENGTH);
+        buf.writeUtf(withPlayerToken(player, url), MAX_URL_LENGTH);
         ServerPlayNetworking.send(player, WebviewPayloads.OPEN_WEB_CHANNEL, buf);*/
         //? }
     }
 
-    public static void openGuiForEntity(ServerPlayerEntity player, String url, String entityJson) {
+    public static void openGuiForEntity(ServerPlayer player, String url, String entityJson) {
         //? if >=1.20.5 {
         ServerPlayNetworking.send(player, new WebviewPayloads.OpenWebS2CPayload(PROTOCOL_VERSION, MODE_GUI, withPlayerToken(player, url)));
         //? } else {
-        /*PacketByteBuf buf = PacketByteBufs.create();
+        /*FriendlyByteBuf buf = PacketByteBufs.create();
         buf.writeVarInt(PROTOCOL_VERSION);
         buf.writeVarInt(MODE_GUI);
-        buf.writeString(withPlayerToken(player, url), MAX_URL_LENGTH);
+        buf.writeUtf(withPlayerToken(player, url), MAX_URL_LENGTH);
         ServerPlayNetworking.send(player, WebviewPayloads.OPEN_WEB_CHANNEL, buf);*/
         //? }
         // The context goes out after the open, not before it. Opening a gui builds a new
@@ -221,39 +228,39 @@ public final class WebviewNetworking {
         sendEntityContext(player, entityJson);
     }
 
-    public static void sendEntityContext(ServerPlayerEntity player, String entityJson) {
+    public static void sendEntityContext(ServerPlayer player, String entityJson) {
         //? if >=1.20.5 {
         ServerPlayNetworking.send(player, new WebviewPayloads.WebviewEntityContextS2CPayload(entityJson));
         //? } else {
-        /*PacketByteBuf buf = PacketByteBufs.create();
-        buf.writeString(entityJson, WebviewPayloads.MAX_EVENT_DATA_LENGTH);
+        /*FriendlyByteBuf buf = PacketByteBufs.create();
+        buf.writeUtf(entityJson, WebviewPayloads.MAX_EVENT_DATA_LENGTH);
         ServerPlayNetworking.send(player, WebviewPayloads.ENTITY_CONTEXT_CHANNEL, buf);*/
         //? }
     }
 
-    public static void clearEntityContext(ServerPlayerEntity player) {
+    public static void clearEntityContext(ServerPlayer player) {
         sendEntityContext(player, "null");
     }
 
-    public static void emitToPage(ServerPlayerEntity player, String eventName, String jsonPayload) {
+    public static void emitToPage(ServerPlayer player, String eventName, String jsonPayload) {
         String name = sanitizeStr(eventName, WebviewPayloads.MAX_EVENT_NAME_LENGTH);
         String data = (jsonPayload == null || jsonPayload.isBlank()) ? "null" : sanitizeStr(jsonPayload, WebviewPayloads.MAX_EVENT_DATA_LENGTH);
         //? if >=1.20.5 {
         ServerPlayNetworking.send(player, new WebviewPayloads.WebviewEmitS2CPayload(name, data));
         //? } else {
-        /*PacketByteBuf buf = PacketByteBufs.create();
-        buf.writeString(name, WebviewPayloads.MAX_EVENT_NAME_LENGTH);
-        buf.writeString(data, WebviewPayloads.MAX_EVENT_DATA_LENGTH);
+        /*FriendlyByteBuf buf = PacketByteBufs.create();
+        buf.writeUtf(name, WebviewPayloads.MAX_EVENT_NAME_LENGTH);
+        buf.writeUtf(data, WebviewPayloads.MAX_EVENT_DATA_LENGTH);
         ServerPlayNetworking.send(player, WebviewPayloads.EMIT_TO_PAGE_CHANNEL, buf);*/
         //? }
     }
 
-    public static void sendMainMenuUrl(ServerPlayerEntity player, String url) {
+    public static void sendMainMenuUrl(ServerPlayer player, String url) {
         //? if >=1.20.5 {
         ServerPlayNetworking.send(player, new WebviewPayloads.WebUIMainMenuPayload(sanitizeUrl(url)));
         //? } else {
-        /*PacketByteBuf buf = PacketByteBufs.create();
-        buf.writeString(sanitizeUrl(url), MAX_URL_LENGTH);
+        /*FriendlyByteBuf buf = PacketByteBufs.create();
+        buf.writeUtf(sanitizeUrl(url), MAX_URL_LENGTH);
         ServerPlayNetworking.send(player, WebviewPayloads.MAIN_MENU_CHANNEL, buf);*/
         //? }
     }
@@ -265,15 +272,15 @@ public final class WebviewNetworking {
      * The URL carries a per-player token like any other page the mod opens, so the
      * death page can verify who it is talking about.
      */
-    public static void sendDeathScreen(ServerPlayerEntity player, String url, String infoJson) {
+    public static void sendDeathScreen(ServerPlayer player, String url, String infoJson) {
         String u = (url == null || url.isBlank()) ? "" : withPlayerToken(player, url);
         String info = (infoJson == null || infoJson.isBlank()) ? "" : sanitizeStr(infoJson, WebviewPayloads.MAX_EVENT_DATA_LENGTH);
         //? if >=1.20.5 {
         ServerPlayNetworking.send(player, new WebviewPayloads.WebviewDeathS2CPayload(u, info));
         //? } else {
-        /*PacketByteBuf buf = PacketByteBufs.create();
-        buf.writeString(u, MAX_URL_LENGTH);
-        buf.writeString(info, WebviewPayloads.MAX_EVENT_DATA_LENGTH);
+        /*FriendlyByteBuf buf = PacketByteBufs.create();
+        buf.writeUtf(u, MAX_URL_LENGTH);
+        buf.writeUtf(info, WebviewPayloads.MAX_EVENT_DATA_LENGTH);
         ServerPlayNetworking.send(player, WebviewPayloads.DEATH_SCREEN_CHANNEL, buf);*/
         //? }
     }
@@ -282,9 +289,9 @@ public final class WebviewNetworking {
      * Tells the client which WebGUI the server runs. Silently skipped for a client that
      * has no such channel — that case is reported to the player as text instead.
      */
-    public static void sendHello(ServerPlayerEntity player) {
+    public static void sendHello(ServerPlayer player) {
         //? if >=1.20.5 {
-        if (!ServerPlayNetworking.canSend(player, WebviewPayloads.WebviewHelloS2CPayload.ID)) {
+        if (!ServerPlayNetworking.canSend(player, WebviewPayloads.WebviewHelloS2CPayload.TYPE)) {
             return;
         }
         ServerPlayNetworking.send(player, new WebviewPayloads.WebviewHelloS2CPayload(PROTOCOL_VERSION, WebGUIVersion.current()));
@@ -292,21 +299,21 @@ public final class WebviewNetworking {
         /*if (!ServerPlayNetworking.canSend(player, WebviewPayloads.HELLO_CHANNEL)) {
             return;
         }
-        PacketByteBuf buf = PacketByteBufs.create();
+        FriendlyByteBuf buf = PacketByteBufs.create();
         buf.writeVarInt(PROTOCOL_VERSION);
-        buf.writeString(WebGUIVersion.current(), WebviewPayloads.MAX_VERSION_LENGTH);
+        buf.writeUtf(WebGUIVersion.current(), WebviewPayloads.MAX_VERSION_LENGTH);
         ServerPlayNetworking.send(player, WebviewPayloads.HELLO_CHANNEL, buf);*/
         //? }
     }
 
     /** Whether the player's client has WebGUI, and whether it is new enough to talk to us. */
-    public static ClientKind clientKind(ServerPlayerEntity player) {
+    public static ClientKind clientKind(ServerPlayer player) {
         //? if >=1.20.5 {
-        if (ServerPlayNetworking.canSend(player, WebviewPayloads.WebviewHelloS2CPayload.ID)) {
+        if (ServerPlayNetworking.canSend(player, WebviewPayloads.WebviewHelloS2CPayload.TYPE)) {
             return ClientKind.CURRENT;
         }
         // No handshake channel but the original one is there: WebGUI, just an older build.
-        return ServerPlayNetworking.canSend(player, WebviewPayloads.OpenWebS2CPayload.ID)
+        return ServerPlayNetworking.canSend(player, WebviewPayloads.OpenWebS2CPayload.TYPE)
                 ? ClientKind.OUTDATED
                 : ClientKind.ABSENT;
         //? } else {
@@ -320,10 +327,10 @@ public final class WebviewNetworking {
     }
 
     /** Tells the client which pages this server ships. Skipped when it ships none. */
-    public static void sendAssetManifest(ServerPlayerEntity player) {
+    public static void sendAssetManifest(ServerPlayer player) {
         //? if >=1.20.5 {
         if (!land.webgui.server.WebviewAssets.enabled()
-                || !ServerPlayNetworking.canSend(player, WebviewPayloads.WebviewAssetManifestS2CPayload.ID)) {
+                || !ServerPlayNetworking.canSend(player, WebviewPayloads.WebviewAssetManifestS2CPayload.TYPE)) {
             return;
         }
         land.webgui.server.WebviewAssetStore store = land.webgui.server.WebviewAssets.store();
@@ -335,9 +342,9 @@ public final class WebviewNetworking {
             return;
         }
         land.webgui.server.WebviewAssetStore store = land.webgui.server.WebviewAssets.store();
-        PacketByteBuf buf = PacketByteBufs.create();
-        buf.writeString(store.revision(), WebviewPayloads.MAX_VERSION_LENGTH);
-        buf.writeString(store.toManifest(), WebviewPayloads.MAX_MANIFEST_LENGTH);
+        FriendlyByteBuf buf = PacketByteBufs.create();
+        buf.writeUtf(store.revision(), WebviewPayloads.MAX_VERSION_LENGTH);
+        buf.writeUtf(store.toManifest(), WebviewPayloads.MAX_MANIFEST_LENGTH);
         ServerPlayNetworking.send(player, WebviewPayloads.ASSET_MANIFEST_CHANNEL, buf);*/
         //? }
     }
@@ -349,10 +356,10 @@ public final class WebviewNetworking {
      * and a page that hangs forever is far worse to diagnose than one that reports a
      * missing file.
      */
-    public static void serveAsset(ServerPlayerEntity player, String requested) {
+    public static void serveAsset(ServerPlayer player, String requested) {
         String path = land.webgui.server.WebviewAssetStore.normalizeRequest(requested);
         java.util.List<byte[]> chunks = land.webgui.server.WebviewAssets.chunksFor(
-                player.getUuid(), player.getName().getString(), path);
+                player.getUUID(), player.getName().getString(), path);
 
         if (chunks.isEmpty()) {
             sendAssetChunk(player, path, 0, 0, new byte[0]);
@@ -363,12 +370,12 @@ public final class WebviewNetworking {
         }
     }
 
-    private static void sendAssetChunk(ServerPlayerEntity player, String path, int index, int count, byte[] bytes) {
+    private static void sendAssetChunk(ServerPlayer player, String path, int index, int count, byte[] bytes) {
         //? if >=1.20.5 {
         ServerPlayNetworking.send(player, new WebviewPayloads.WebviewAssetChunkS2CPayload(path, index, count, bytes));
         //? } else {
-        /*PacketByteBuf buf = PacketByteBufs.create();
-        buf.writeString(path, WebviewPayloads.MAX_ASSET_PATH_LENGTH);
+        /*FriendlyByteBuf buf = PacketByteBufs.create();
+        buf.writeUtf(path, WebviewPayloads.MAX_ASSET_PATH_LENGTH);
         buf.writeVarInt(index);
         buf.writeVarInt(count);
         buf.writeByteArray(bytes);
@@ -385,7 +392,7 @@ public final class WebviewNetworking {
      * re-send was a setting that silently did not apply until the player reconnected —
      * which is how an edited page kept showing its old self.
      */
-    public static void sendConfigSnapshot(ServerPlayerEntity player) {
+    public static void sendConfigSnapshot(ServerPlayer player) {
         sendTrustedOrigins(player, WebviewServerConfig.trustedCommandOriginsJoined());
         // Before any page URL: a page pointed at webgui:/ cannot resolve anything until
         // the client knows what the server ships.
@@ -397,18 +404,18 @@ public final class WebviewNetworking {
         sendMainMenuUrl(player, WebviewServerConfig.mainMenuUrl());
     }
 
-    public static void sendTrustedOrigins(ServerPlayerEntity player, String origins) {
+    public static void sendTrustedOrigins(ServerPlayer player, String origins) {
         String o = origins == null ? "" : origins;
         //? if >=1.20.5 {
         ServerPlayNetworking.send(player, new WebviewPayloads.WebviewTrustedOriginsS2CPayload(o));
         //? } else {
-        /*PacketByteBuf buf = PacketByteBufs.create();
-        buf.writeString(o, WebviewPayloads.MAX_EVENT_DATA_LENGTH);
+        /*FriendlyByteBuf buf = PacketByteBufs.create();
+        buf.writeUtf(o, WebviewPayloads.MAX_EVENT_DATA_LENGTH);
         ServerPlayNetworking.send(player, WebviewPayloads.TRUSTED_ORIGINS_CHANNEL, buf);*/
         //? }
     }
 
-    private static String withPlayerToken(ServerPlayerEntity player, String url) {
+    private static String withPlayerToken(ServerPlayer player, String url) {
         if (!WebviewServerConfig.enableTokens()) {
             return sanitizeUrl(url);
         }

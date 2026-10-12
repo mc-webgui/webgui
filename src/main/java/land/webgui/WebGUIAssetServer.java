@@ -79,6 +79,20 @@ public final class WebGUIAssetServer {
         if (server != null) {
             return;
         }
+        // HttpServer.start() spawns its dispatcher thread internally, inheriting the daemon
+        // flag of the caller. Bound from the render thread it would keep the JVM alive after
+        // the player quits. Joined at once, so callers still get a started server.
+        Thread binder = new Thread(WebGUIAssetServer::bind, "webgui-assets-bind");
+        binder.setDaemon(true);
+        binder.start();
+        try {
+            binder.join();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    private static void bind() {
         for (int candidate = DEFAULT_PORT; candidate < DEFAULT_PORT + PORT_ATTEMPTS; candidate++) {
             try {
                 // Explicitly IPv4, not getLoopbackAddress(): with IPv6 present that

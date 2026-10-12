@@ -1,11 +1,10 @@
 package land.webgui;
 
+import land.webgui.browser.WebBrowser;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import de.keksuccino.rinku.RinkuBrowser;
-import org.cef.browser.CefDevToolsClient;
 
 /**
  * Chromium's own view of a page, in the game log: failed requests with their status,
@@ -22,7 +21,7 @@ public final class WebGUIDevTools {
     /** A page in a loop could produce thousands of these a second. */
     private static final int MAX_PER_SECOND = 20;
     /** Browsers already being watched, so a navigation does not attach a second time. */
-    private static final java.util.Map<RinkuBrowser, Boolean> ATTACHED = new java.util.WeakHashMap<>();
+    private static final java.util.Map<WebBrowser, Boolean> ATTACHED = new java.util.WeakHashMap<>();
 
     private static long windowStartedAt;
     private static int inWindow;
@@ -37,7 +36,7 @@ public final class WebGUIDevTools {
      * natively — but attaching twice would double every line in the log. Does nothing
      * with the setting off.
      */
-    public static void attachOnce(RinkuBrowser browser) {
+    public static void attachOnce(WebBrowser browser) {
         if (browser == null || !WebGUIClientConfig.devTools()) {
             return;
         }
@@ -47,20 +46,13 @@ public final class WebGUIDevTools {
             }
             ATTACHED.put(browser, Boolean.TRUE);
         }
-        CefDevToolsClient client;
-        try {
-            client = browser.getDevToolsClient();
-        } catch (Throwable t) {
-            WebGUIMod.LOGGER.warn("webgui devtools: no protocol client for this browser: {}", t.toString());
-            return;
-        }
-        if (client == null) {
-            return;
-        }
-        client.addEventListener(WebGUIDevTools::onEvent);
+        // Through the runtime's own protocol connection rather than a CEF client of our
+        // own: it waits for the browser to exist and for its first load, which is the race
+        // the old code lost whenever a page was asked about too early.
+        browser.onDevToolsEvent(WebGUIDevTools::onEvent);
         // Each domain says nothing until it is asked for.
         for (String domain : new String[] {"Log.enable", "Runtime.enable", "Network.enable"}) {
-            client.executeDevToolsMethod(domain);
+            browser.callDevTools(domain);
         }
         WebGUIMod.LOGGER.info("webgui devtools: watching {}", browser.getURL());
     }

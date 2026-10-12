@@ -1,13 +1,12 @@
 package land.webgui.server;
 
+import net.minecraft.server.level.ServerPlayer;
 //? if fabric {
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
-import net.minecraft.server.network.ServerPlayerEntity;
 //? } else {
 /*import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import net.minecraft.server.level.ServerPlayer;*/
+import java.util.concurrent.CopyOnWriteArrayList;*/
 //? }
 
 public final class WebviewServerEvents {
@@ -38,15 +37,11 @@ public final class WebviewServerEvents {
 
     @FunctionalInterface
     public interface PageEventHandler {
-        //? if fabric {
         /**
          * @param player  the player whose page sent the message
          * @param channel value of the {@code channel} field in the JSON payload
          * @param payload the full raw JSON string as sent by the page
          */
-        void onPageEvent(ServerPlayerEntity player, String channel, String payload);
-        //? } else {
-        /*void onPageEvent(ServerPlayer player, String channel, String payload);*/
-        //? }
+        void onPageEvent(ServerPlayer player, String channel, String payload);
     }
 }

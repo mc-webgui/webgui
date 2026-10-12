@@ -16,10 +16,15 @@ stonecutter {
     centralScript = 'build.gradle'
 
     create(rootProject) {
-        // MC 26 (NeoForge only — Yarn mappings for 26.x are not published).
-        // Both lines are stable: 26.2 is Mojang's current release and NeoForge
-        // dropped the -beta suffix on the 26.2 line at build 26.2.0.57.
+        // MC 26, both loaders. The game is unobfuscated from 26.1, so Fabric here builds
+        // with a different Loom plugin than the versions below — see the plugins block in
+        // build.gradle. One Gradle build still covers both eras.
+        // 26.3 is Mojang's newest stable. NeoForge has only a beta on that line, so the
+        // release workflow publishes both 26.3 targets as beta rather than release.
+        version '26.3-neoforge',    '26.3-neoforge'
+        version '26.3-fabric',      '26.3-fabric'
         version '26.2-neoforge',    '26.2-neoforge'
+        version '26.2-fabric',      '26.2-fabric'
         version '26.1.2-neoforge',  '26.1.2-neoforge'
         version '1.21.11-fabric',   '1.21.11-fabric'
         version '1.21.11-neoforge', '1.21.11-neoforge'

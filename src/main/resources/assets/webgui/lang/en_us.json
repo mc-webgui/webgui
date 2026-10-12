@@ -11,7 +11,9 @@
   "screen.webgui.settings.title": "WebGUI Settings",
   "screen.webgui.settings.devtools": "Page developer tools",
   "screen.webgui.settings.devtools.hint1": "Writes browser errors, failed requests and console output",
-  "screen.webgui.settings.devtools.hint2": "to the game log. For developing pages, not for playing.",
+  "screen.webgui.settings.devtools.hint2": "Also opens the inspector on F12. Takes effect after a restart.",
   "screen.webgui.settings.inspector.on": "Chrome DevTools: open %s in a browser",
-  "screen.webgui.settings.inspector.off": "For the full inspector, add this launcher game argument:"
+  "screen.webgui.settings.inspector.off": "For the full inspector, add this launcher game argument:",
+  "screen.webgui.settings.scroll": "Scroll speed",
+  "screen.webgui.settings.scroll.hint": "How far one notch of the wheel carries a page."
 }
