@@ -39,6 +39,8 @@ public final class WebviewServerConfig {
     private String queryParamName = "webgui_token";
     private String tokenSecretBase64 = "";
 
+    // On unless the file says otherwise, and autoHudUrl points at the page the server
+    // creates for itself, so a fresh server shows something rather than nothing.
     private Boolean autoHudOnJoin;
     private String autoHudUrl = "webgui://hud.html";
 
@@ -90,7 +92,7 @@ public final class WebviewServerConfig {
             o.addProperty("queryParamName", "webgui_token");
             o.addProperty("tokenSecretBase64", "<base64-encoded 32-byte secret — auto-generated in server.json>");
 
-            o.addProperty("autoHudOnJoin", false);
+            o.addProperty("autoHudOnJoin", true);
             o.addProperty("autoHudUrl", "webgui://hud.html");
 
             o.addProperty("mainMenuUrl", "webgui://index.html");
@@ -206,7 +208,7 @@ public final class WebviewServerConfig {
 
     public static boolean autoHudOnJoin() {
         Boolean v = instance.autoHudOnJoin;
-        return v != null && v;
+        return v == null || v;
     }
 
     public static String autoHudUrl() {
