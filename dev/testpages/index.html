@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>WebGUI test pages</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <h1>WebGUI test pages</h1>
+  <p class="sub">Each page checks one part of the mod. Open with
+     <code>/webgui gui @s webgui:index.html</code>.</p>
+
+  <div class="panel">
+    <h2>This page</h2>
+    <div class="kv">
+      <div>bridge</div><div id="has-bridge">checking…</div>
+      <div>mode</div><div id="mode">—</div>
+      <div>assetsBase</div><div id="base">—</div>
+      <div>location</div><div id="here">—</div>
+    </div>
+    <p class="dim" style="margin-top:10px">
+      The links below are written as <code>webgui://…</code>. They are the mod's own scheme,
+      which the browser knows nothing about — the bridge rewrites them to the local page
+      server. If they navigate, that rewriting works.
+    </p>
+  </div>
+
+  <div class="grid">
+    <a class="card" href="webgui://bridge.html">
+      <b>Bridge &amp; data →</b>
+      <span>page → game channels, live client data, bound entity, server events, death</span>
+    </a>
+    <a class="card" href="webgui://input.html">
+      <b>Input &amp; cursors →</b>
+      <span>typing, select dropdown, scrolling, cursor shapes, double click</span>
+    </a>
+    <a class="card" href="webgui://download.html">
+      <b>Downloads →</b>
+      <span>a file the page makes, and one from the web</span>
+    </a>
+    <a class="card" href="webgui://death.html">
+      <b>Death screen &rarr;</b>
+      <span>set <code>deathScreenUrl</code> to <code>webgui:/death.html</code>, then die</span>
+    </a>
+    <a class="card" href="webgui://hud.html">
+      <b>HUD page →</b>
+      <span>open with <code>/webgui hud</code> — see-through, glanceable</span>
+    </a>
+  </div>
+
+  <div class="panel" style="margin-top:14px">
+    <h2>Close</h2>
+    <div class="row">
+      <button id="close">webgui.closeGui()</button>
+      <span class="dim">should shut the screen, same as Escape</span>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var g = window.webgui;
+  var has = document.getElementById('has-bridge');
+  if (!g) {
+    has.textContent = 'missing — window.webgui is not defined';
+    has.className = 'bad';
+    return;
+  }
+  has.textContent = 'present';
+  has.className = 'ok';
+  document.getElementById('mode').textContent = g.isHud ? 'HUD overlay' : 'full screen';
+  document.getElementById('base').textContent = g.assetsBase || '(none — server ships no pages)';
+  document.getElementById('here').textContent = location.href;
+  if (g.isHud) { document.documentElement.classList.add('hud'); document.body.classList.add('hud'); };
+
+  document.getElementById('close').addEventListener('click', function () {
+    g.closeGui();
+  });
+})();
+</script>
+</body>
+</html>

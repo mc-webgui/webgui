@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Input &amp; cursors — WebGUI test</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <h1>Input &amp; cursors</h1>
+  <p class="sub"><a href="webgui://index.html">← back</a></p>
+
+  <div class="panel">
+    <h2>Typing</h2>
+    <p class="dim">Letters, digits, backspace, arrows, Home/End, Ctrl+A, Ctrl+C/V.
+       Escape should close the screen rather than reach the field.</p>
+    <div class="row">
+      <input type="text" id="text" placeholder="type here" size="30">
+      <input type="password" placeholder="password" size="16">
+    </div>
+    <p style="margin-top:10px"><textarea placeholder="several lines, to check Enter and arrows"></textarea></p>
+    <div class="kv">
+      <div>last key</div><div id="key">—</div>
+      <div>value</div><div id="value">—</div>
+    </div>
+    <p style="margin-top:10px">
+      <label><input type="checkbox" id="trace"> write every key event to the game log</label>
+      <span class="dim">— keydown, keypress, beforeinput, input, keyup; one line each</span>
+    </p>
+  </div>
+
+  <div class="panel">
+    <h2>Form</h2>
+    <p class="dim">Enter in a single-line field should submit the form rather than type
+       anything — the browser's own behaviour, and a different path from the newline a
+       textarea gets.</p>
+    <form id="form">
+      <div class="row">
+        <input type="text" id="formfield" placeholder="type, then press Enter" size="28">
+        <button type="submit">submit</button>
+      </div>
+    </form>
+    <div class="kv" style="margin-top:10px">
+      <div>submits</div><div id="submits">0</div>
+      <div>last value</div><div id="submitted">—</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Selection</h2>
+    <p class="dim">Double click selects a word, triple click a line — the game reports each
+       press on its own, so the count is worked out by the mod.</p>
+    <p id="sample">The quick brown fox jumps over the lazy dog, twice before breakfast.</p>
+    <div class="kv">
+      <div>selected</div><div id="selected">—</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Dropdown</h2>
+    <p class="dim">A native select. Chromium paints this into a surface of its own, so it
+       checks that popups are drawn over the page at all.</p>
+    <select id="select">
+      <option>first option</option>
+      <option>second option</option>
+      <option>third option</option>
+      <option>fourth option</option>
+      <option>fifth option</option>
+    </select>
+    <span class="dim" id="chosen"></span>
+  </div>
+
+  <div class="panel">
+    <h2>Cursors</h2>
+    <p class="dim">Hover each box. The name is decided by the engine, not by this page:
+       java-cef turns Chromium's cursor into one of AWT's fourteen before the mod sees it,
+       so anything AWT has no name for arrives as a plain arrow and cannot be recovered.
+       The boxes marked <b>n/a</b> are expected to stay arrows.</p>
+    <div class="cursors">
+      <div style="cursor:pointer">pointer</div>
+      <div style="cursor:text">text</div>
+      <div style="cursor:crosshair">crosshair</div>
+      <div style="cursor:ew-resize">ew-resize</div>
+      <div style="cursor:ns-resize">ns-resize</div>
+      <div style="cursor:n-resize">n-resize</div>
+      <div style="cursor:s-resize">s-resize</div>
+      <div style="cursor:move">move</div>
+      <div style="cursor:not-allowed">not-allowed <b>n/a</b></div>
+      <div style="cursor:grab">grab <b>n/a</b></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Scrolling</h2>
+    <p class="dim">Spin the wheel. Speed is a setting — mod list → WebGUI → Config.</p>
+    <div class="tall">
+      <div class="ruler" id="ruler"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var g = window.webgui;
+  if (g && g.isHud) { document.documentElement.classList.add('hud'); document.body.classList.add('hud'); };
+
+  var text = document.getElementById('text');
+  var key = document.getElementById('key');
+  var value = document.getElementById('value');
+  var submits = 0;
+  document.getElementById('form').addEventListener('submit', function (e) {
+    // Nowhere to send it, and a real navigation would take the page away from under the test.
+    e.preventDefault();
+    submits++;
+    document.getElementById('submits').textContent = submits;
+    document.getElementById('submitted').textContent =
+      JSON.stringify(document.getElementById('formfield').value);
+  });
+
+  document.addEventListener('keydown', function (e) {
+    key.textContent = e.key + '   (code ' + e.code + ', keyCode ' + e.keyCode + ')'
+        + (e.ctrlKey ? ' +ctrl' : '') + (e.shiftKey ? ' +shift' : '') + (e.altKey ? ' +alt' : '');
+  });
+  text.addEventListener('input', function () { value.textContent = text.value; });
+
+  // Every stage of a keystroke, into the game log: a page that will not take text looks the
+  // same from the outside whichever stage is missing. Off by default, it is a lot of lines.
+  var trace = document.getElementById('trace');
+  ['keydown', 'keypress', 'beforeinput', 'input', 'keyup'].forEach(function (name) {
+    document.addEventListener(name, function (e) {
+      if (!trace.checked) return;
+      console.log('[' + name + '] key=' + JSON.stringify(e.key)
+        + ' code=' + JSON.stringify(e.code) + ' keyCode=' + e.keyCode
+        + ' which=' + e.which + ' data=' + JSON.stringify(e.data)
+        + ' target=' + (e.target && (e.target.id || e.target.tagName)));
+    });
+  });
+
+  document.addEventListener('mouseup', function () {
+    var s = String(window.getSelection());
+    document.getElementById('selected').textContent = s === '' ? '—' : s;
+  });
+
+  var select = document.getElementById('select');
+  select.addEventListener('change', function () {
+    document.getElementById('chosen').textContent = '→ ' + select.value;
+  });
+
+  // Marks down the page so it is obvious how far one notch of the wheel carries it.
+  var ruler = document.getElementById('ruler');
+  var lines = [];
+  for (var i = 0; i <= 1380; i += 20) lines.push(i + ' px');
+  ruler.textContent = lines.join('\n');
+})();
+</script>
+</body>
+</html>

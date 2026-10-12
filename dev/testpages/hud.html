@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HUD — WebGUI test</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <div class="panel" style="max-width:340px">
+    <h2 style="margin-bottom:6px">WebGUI HUD</h2>
+    <div class="kv" id="data">
+      <div>mode</div><div id="mode">—</div>
+      <div>health</div><div id="health">—</div>
+      <div>food</div><div id="food">—</div>
+      <div>pos</div><div id="pos">—</div>
+      <div>look</div><div id="look">—</div>
+      <div>dimension</div><div id="dim">—</div>
+      <div>fps-ish</div><div id="tick">—</div>
+    </div>
+    <p class="dim" style="margin-top:10px;font-size:12px">
+      Open with <code>/webgui hud @s webgui:hud.html</code>.
+      Press <code>`</code> to make it interactive — the button below only works then.
+    </p>
+    <div class="row">
+      <button id="ping">send a log line</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var g = window.webgui;
+  var mode = document.getElementById('mode');
+  if (!g) {
+    mode.textContent = 'no bridge';
+    return;
+  }
+  // Over the world: the page must not paint a background of its own, or it covers the game.
+  if (g.isHud) { document.documentElement.classList.add('hud'); document.body.classList.add('hud'); };
+  mode.textContent = g.isHud ? 'HUD overlay' : 'full screen (open it with /webgui hud)';
+
+  var ticks = 0;
+  var since = Date.now();
+
+  function show(c) {
+    if (!c) return;
+    document.getElementById('health').textContent = c.health;
+    document.getElementById('food').textContent = c.food;
+    if (c.pos) {
+      document.getElementById('pos').textContent =
+          c.pos.x.toFixed(1) + '  ' + c.pos.y.toFixed(1) + '  ' + c.pos.z.toFixed(1);
+    }
+    if (c.look) {
+      document.getElementById('look').textContent =
+          'yaw ' + c.look.yaw.toFixed(0) + '  pitch ' + c.look.pitch.toFixed(0);
+    }
+    document.getElementById('dim').textContent = c.dimension;
+
+    // How often the game pushes data, which is the useful half of "is it smooth".
+    ticks++;
+    var seconds = (Date.now() - since) / 1000;
+    if (seconds >= 1) {
+      document.getElementById('tick').textContent = (ticks / seconds).toFixed(1) + '/s';
+      ticks = 0;
+      since = Date.now();
+    }
+  }
+
+  g.on('client', show);
+  if (g.client) show(g.client);
+
+  document.getElementById('ping').addEventListener('click', function () {
+    g.postToGame({ channel: 'log', message: 'HUD button pressed' });
+  });
+})();
+</script>
+</body>
+</html>

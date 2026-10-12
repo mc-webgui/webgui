@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Bridge &amp; data — WebGUI test</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <h1>Bridge &amp; data</h1>
+  <p class="sub"><a href="webgui://index.html">← back</a></p>
+
+  <div class="panel">
+    <h2>Page → game</h2>
+    <p class="dim">Each button sends one message. The first four land in the game log;
+       watch it, not this page.</p>
+    <div class="row">
+      <button data-channel="log">log</button>
+      <button data-channel="warn">warn</button>
+      <button data-channel="error">error</button>
+      <button data-channel="debug">debug</button>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button id="command">command: /time set day</button>
+      <span class="dim">only from a trusted origin — otherwise the game refuses it</span>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button id="custom">custom channel → server</button>
+      <span class="dim">any channel the game does not handle itself is forwarded to the server</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Game → page</h2>
+    <p class="dim">Client data is pushed as the game plays. Move, look around or take damage
+       and these should change.</p>
+    <div class="kv" id="client"><div>waiting…</div><div></div></div>
+  </div>
+
+  <div class="panel">
+    <h2>Bound entity</h2>
+    <p class="dim">Bind one with
+       <code>/webgui bind entity @e[type=pig,limit=1] "webgui:bridge.html"</code>,
+       then right-click the pig.</p>
+    <div class="kv" id="entity"><div>none</div><div></div></div>
+  </div>
+
+  <div class="panel">
+    <h2>Events</h2>
+    <p class="dim">Everything the game dispatches: <code>webgui:client</code>,
+       <code>webgui:entity</code>, <code>webgui:death</code> and anything a server emits.</p>
+    <div class="log" id="log"></div>
+    <div class="row" style="margin-top:10px">
+      <button id="respawn">webgui.respawn()</button>
+      <span class="dim">only meaningful on the death screen</span>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var g = window.webgui;
+  var log = document.getElementById('log');
+
+  function line(text, cls) {
+    var at = new Date().toLocaleTimeString();
+    var div = document.createElement('div');
+    if (cls) div.className = cls;
+    div.textContent = at + '  ' + text;
+    log.appendChild(div);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  if (!g) {
+    line('window.webgui is missing — the bridge was not injected', 'bad');
+    return;
+  }
+  if (g.isHud) { document.documentElement.classList.add('hud'); document.body.classList.add('hud'); };
+
+  Array.prototype.forEach.call(document.querySelectorAll('[data-channel]'), function (b) {
+    b.addEventListener('click', function () {
+      var channel = b.getAttribute('data-channel');
+      g.postToGame({ channel: channel, message: 'hello from the test page (' + channel + ')' });
+      line('sent ' + channel);
+    });
+  });
+
+  document.getElementById('command').addEventListener('click', function () {
+    g.postToGame({ channel: 'command', command: 'time set day' });
+    line('sent command');
+  });
+
+  document.getElementById('custom').addEventListener('click', function () {
+    g.postToGame({ channel: 'testPage', note: 'anything', at: Date.now() });
+    line('sent custom channel "testPage" — the server decides what to do with it');
+  });
+
+  document.getElementById('respawn').addEventListener('click', function () {
+    g.respawn();
+    line('sent respawn');
+  });
+
+  function table(node, data) {
+    node.innerHTML = '';
+    Object.keys(data).forEach(function (key) {
+      var value = data[key];
+      var k = document.createElement('div');
+      var v = document.createElement('div');
+      k.textContent = key;
+      v.textContent = (value !== null && typeof value === 'object')
+          ? JSON.stringify(value) : String(value);
+      node.appendChild(k);
+      node.appendChild(v);
+    });
+  }
+
+  g.on('client', function (data) { table(document.getElementById('client'), data || {}); });
+  g.on('entity', function (data) {
+    table(document.getElementById('entity'), data || { entity: 'none' });
+    line('entity context received');
+  });
+  g.on('death', function (data) {
+    line('death: ' + JSON.stringify(data), 'bad');
+  });
+
+  // Whatever the server chose to emit. The name is the server's, so this only proves the
+  // path works when something actually sends it.
+  g.on('testPage', function (data) { line('server → page: ' + JSON.stringify(data), 'ok'); });
+
+  if (g.client) table(document.getElementById('client'), g.client);
+  if (g.entity) table(document.getElementById('entity'), g.entity);
+  line('ready');
+})();
+</script>
+</body>
+</html>
