@@ -25,7 +25,7 @@ public class WebGUISettingsScreen extends Screen {
 
     /** What the button steps through. A slider's constructor differs on every other
      *  Minecraft version; a button that cycles does not. */
-    private static final int[] SCROLL_STEPS = {1, 3, 5, 7, 10, 15, 20};
+    private static final int[] SCROLL_STEPS = {1, 3, 5, 10, 15, 20, 25, 30, 40};
 
     private Button devToolsButton;
     private Button scrollButton;

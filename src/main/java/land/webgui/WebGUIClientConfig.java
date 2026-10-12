@@ -24,7 +24,7 @@ public final class WebGUIClientConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     /** As fast as this setting goes. Past it a notch throws a page across its own length. */
-    public static final int SCROLL_MAX = 20;
+    public static final int SCROLL_MAX = 40;
 
     /** Off by default: a developer's tool, and it makes the log noisier. */
     private boolean devTools = false;
@@ -38,7 +38,7 @@ public final class WebGUIClientConfig {
      * One for one is what a browser does, and in a page it reads as barely moving — the game
      * counts a notch where a desktop browser counts several lines.
      */
-    private int scrollNotches = 7;
+    private int scrollNotches = 25;
 
     private static WebGUIClientConfig instance = new WebGUIClientConfig();
 
