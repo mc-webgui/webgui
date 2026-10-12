@@ -22,6 +22,10 @@ public final class WebviewJoinHud {
                         return;
                     }
 
+                    // Before the client check: this one is about the server's own version and
+                    // is worth saying to an operator whose client has no WebGUI at all.
+                    land.webgui.server.WebGUIUpdateChecker.notifyOnJoin(player);
+
                     // First: everything below is pointless for a client that cannot receive it,
                     // and this is also where such a client is told so.
                     if (!land.webgui.server.WebviewClientCheck.onJoin(player)) {
@@ -58,6 +62,10 @@ public final class WebviewJoinHud {
 
     private static void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
         ServerPlayer player = (ServerPlayer) event.getEntity();
+
+        // Before the client check: this one is about the server's own version and is worth
+        // saying to an operator whose client has no WebGUI at all.
+        land.webgui.server.WebGUIUpdateChecker.notifyOnJoin(player);
 
         // First: everything below is pointless for a client that cannot receive it, and
         // this is also where such a client is told so.

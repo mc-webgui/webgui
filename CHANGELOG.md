@@ -10,6 +10,9 @@ client still talks to a 1.8.x server.
 - **Minecraft 26.2 on Fabric, and 26.3 on both loaders.** 26.3 is published as a beta: the game itself is still in snapshots, and it replaced GLFW with SDL and moved the GPU API out of `blaze3d`, so the parts of this mod that touch the window and the screen are new there.
 
 ### Changed
+- **The update check is built in and always runs.** The server asks Modrinth on start whether a newer WebGUI exists for its Minecraft version and loader, and falls back to GitHub releases if Modrinth cannot be reached. It used to do nothing at all unless an operator found `updateCheckUrl` and filled in an endpoint of their own, which almost nobody did.
+  - Operators are also told in chat when they join, so an update is not something only the start-up log knows. Set `updateNotifyInChat` to `false` to keep the console notice and drop the chat one. Ordinary players are never told.
+  - **`updateCheckUrl` is gone.** The address is fixed in the mod now. A config that still has the key is not an error; it is ignored.
 - **WebGUI no longer needs another mod to run.** The embedded browser is part of WebGUI now instead of being provided by a separate library mod, so installing WebGUI is one file and nothing else. Chromium itself is still downloaded once per machine on first start, outside the game directory, and shared by every instance.
 
 ### Fixed
