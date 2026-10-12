@@ -1,5 +1,25 @@
 # Changelog
 
+## 2.0.0 - 2026-10-13
+
+A major version for one reason: WebGUI no longer depends on another mod. Nothing in the page
+API changed and the network protocol is the same, so existing pages keep working and a 2.0.0
+client still talks to a 1.8.x server.
+
+### Added
+- **Minecraft 26.2 on Fabric, and 26.3 on both loaders.** 26.3 is published as a beta: the game itself is still in snapshots, and it replaced GLFW with SDL and moved the GPU API out of `blaze3d`, so the parts of this mod that touch the window and the screen are new there.
+
+### Changed
+- **WebGUI no longer needs another mod to run.** The embedded browser is part of WebGUI now instead of being provided by a separate library mod, so installing WebGUI is one file and nothing else. Chromium itself is still downloaded once per machine on first start, outside the game directory, and shared by every instance.
+
+### Fixed
+- **The custom death screen on Fabric 26.2 and later.** It hooked a method the game no longer has, which the mixin configuration treats as fatal — the game would not start at all on those versions.
+- **The game can be closed again.** Quitting left two threads running — the page server and Chromium — so the process never exited: silently on 1.21.1 and earlier, and from 1.21.11 as a crash report written by the game's own shutdown watchdog.
+- **Typing into a page on 26.3.** SDL only delivers typed characters while text input has been started, and the game starts it for its own text fields. Keys arrived and shortcuts such as Ctrl+A and Ctrl+V worked, but letters did not reach the page.
+- **Cursor shapes on 26.3.** The cursor is now decided once per frame by the game, so setting it directly was overwritten before it could be seen.
+- **Enter in a page.** It never produced a character event, on any version, so a `textarea` took every key but this one and a form could not be submitted with it.
+- A NeoForge warning on every launch of 26.3 about deprecated mod metadata.
+
 ## 1.8.1 - 2026-09-12
 
 ### Fixed
