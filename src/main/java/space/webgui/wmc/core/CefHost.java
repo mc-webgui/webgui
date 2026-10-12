@@ -69,33 +69,19 @@ public final class CefHost implements AutoCloseable {
     /**
      * The one place the message loop is pumped from.
      *
-     * <p>java-cef pumps through {@code CefApp.doMessageLoopWork}, which posts a runnable that
-     * checks the app's state when it is scheduled rather than when it runs, arms a timer that
-     * checks nothing at all, and re-arms itself after every tick. Chromium asks for a pump
-     * after every task it posts, and during a shutdown it posts constantly - so a pump lands
-     * between the client going away and CefShutdown and dereferences what is no longer there.
-     * Under gdb that is SIGSEGV inside libcef in exactly that runnable, which the JVM reports
-     * as an abort; on the runners it was SIGABRT on Linux, SIGTRAP on macOS, and a trace-less
-     * exception on Windows, whenever the pump happened to land in the window.
+     * <p>java-cef's own {@code CefApp.doMessageLoopWork} checks the app state when a pump is
+     * scheduled rather than when it runs, so a pump landing between the client going away and
+     * CefShutdown crashes inside libcef. Chromium asks for pumps constantly during shutdown,
+     * so that window is hit often. Here every pump re-checks on the event thread, at the
+     * moment it would run. The native call is reached by reflection; nothing else in the
+     * process pumps.
      *
-     * <p>So Chromium's requests are answered here and never by java-cef's adapter, and every
-     * pump checks on the event thread, at the moment it would run, whether pumping is still
-     * wanted. The native call is java-cef's own {@code N_DoMessageLoopWork}, reached by
-     * reflection because there is no other way to it; MCEF solves the same problem by patching
-     * the class. Nothing else in the process pumps: the adapter is never asked, so its timer
-     * is never made.
+     * <p>Pace comes from whoever calls {@link CefHost#pump()}: a game turning the loop once a
+     * frame gets a page that answers at its frame rate, and Chromium's own requests are not
+     * armed while such a driver is at work. A runtime nobody drives turns the loop itself, and
+     * a driver that stops is noticed within {@link #LAPSE_MILLIS}.
      *
-     * <p><strong>Who sets the pace.</strong> Whoever calls {@link CefHost#pump()} does, while
-     * they keep calling: a game that turns the loop once a frame gets a page that answers at
-     * the rate it draws at, rather than at whatever period a timer was given. While such a
-     * driver is at work Chromium's requests are not armed at all - the next turn is already
-     * coming, and arming them as well would pump the loop twice for one frame of work. A
-     * runtime nobody drives turns it itself, which is what a test and a headless process need,
-     * and a driver that stops being called is noticed within {@link #LAPSE_MILLIS} and taken
-     * over from. The two modes are one field and neither has to be configured.
-     *
-     * <p>Static, like the app handler that feeds it: java-cef keeps one app handler per
-     * process, installed before the host exists.
+     * <p>Static, like the app handler that feeds it: java-cef keeps one per process.
      */
     private static final class Pump {
 

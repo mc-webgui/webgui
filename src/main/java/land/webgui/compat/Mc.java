@@ -7,20 +7,11 @@ import net.minecraft.network.chat.Component;
 /**
  * The handful of things Minecraft renamed, in one place.
  *
- * <p>Every one of these is a line that would otherwise be written twice at every call site —
- * once for the old name and once for the new — and the cost of that is not the typing. It is
- * that a new Minecraft version means finding all of them, and the ones that are missed do not
- * fail to compile: they take the wrong branch and misbehave quietly. That happened in this mod
- * already, with predicates written as {@code >=26.2-neoforge}: correct until a Fabric target
- * on 26.2 existed, then silently false.
+ * <p>If the game renamed it and this mod calls it more than once, it belongs here: a missed
+ * call site does not fail to compile, it takes the wrong branch quietly.
  *
- * <p>So the rule here is: if the game renamed it and this mod calls it more than once, it
- * belongs in this class. Porting to the next version then means reading one file.
- *
- * <p>What does <em>not</em> belong here is anything a loader differs on — that is a different
- * axis and lives in the loader branches — and anything with a return type that changes, since
- * hiding the difference is the one thing a method cannot do. Identifiers are the example:
- * {@link Ids} exists for them and has to be branched at its own signature.
+ * <p>Loader differences do not belong here — those live in the loader branches — nor does
+ * anything whose return type changes, which a method cannot hide. See {@link Ids}.
  */
 public final class Mc {
 

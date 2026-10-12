@@ -3,25 +3,14 @@ package space.webgui.wmc.core;
 import java.awt.Cursor;
 
 /**
- * What Chromium asks the cursor to be, said in the language a page uses.
+ * Chromium's cursor, as the CSS name a page would have written.
  *
- * <p>The API says cursors in CSS names — {@code pointer}, {@code text}, {@code ew-resize} —
- * because that is what the page itself wrote, and because a number out of someone else's header
- * has no business in a contract that names no Chromium types.
+ * <p>The number java-cef reports is an AWT cursor, not a Chromium one — it translates on the
+ * way up. Reading it against Chromium's list gives names shifted by a few: a link reports
+ * {@code sw-resize}, text reports {@code pointer}.
  *
- * <p><strong>The number is an AWT cursor, not a Chromium one.</strong> java-cef translates
- * Chromium's cursor into one of AWT's fourteen on the way up; upstream's own off-screen browser
- * gives the game away by passing it straight to {@code new Cursor(int)}, which accepts nothing
- * else. Read as Chromium's list instead — which is what the other embedder of this library
- * does, and what this did first — the names come out shifted: a link reports {@code sw-resize}
- * and text reports {@code pointer}, so the cursor changes over everything and is wrong over
- * everything. It was caught by logging the names and noticing that {@code text} never appeared
- * on a page made mostly of text.
- *
- * <p><strong>What that costs.</strong> AWT has no name for {@code not-allowed}, {@code grab},
- * {@code zoom-in}, {@code progress} or {@code cell}, so Chromium's are flattened to the default
- * arrow before this project ever sees them. A page asking for those gets an arrow, and there is
- * nothing to be done about it here: the distinction is lost below us.
+ * <p>AWT has no name for {@code not-allowed}, {@code grab}, {@code zoom-in} or {@code cell},
+ * so those are already flattened to the arrow before they reach here.
  */
 final class CefCursors {
 

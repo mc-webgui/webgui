@@ -1,26 +1,14 @@
 package land.webgui.browser;
 
 /**
- * What the game says about a key, said again in the numbers the browser expects.
+ * SDL key numbers, in the GLFW ones the engine speaks.
  *
- * <p>From 26.3 Minecraft's window is SDL's, and the key it hands a mod is an SDL scan code —
- * a USB HID usage, where {@code A} is 4. The engine underneath speaks GLFW, where {@code A} is
- * 65, because that is what every Minecraft before 26.3 spoke and what java-cef was taught. So
- * the translation happens here, at the edge of the mod: the engine keeps one contract and
- * never learns there was a second windowing library.
+ * <p>From 26.3 the game hands out SDL scan codes — USB HID usages, where {@code A} is 4 —
+ * while the engine expects GLFW, where {@code A} is 65. Translating at the edge of the mod
+ * keeps the engine unaware that a second windowing library exists.
  *
- * <p>Two numbers come out of each key, and they are not the same thing:
- *
- * <ul>
- * <li>the <strong>GLFW key code</strong>, which decides what the page sees as
- *     {@code event.code};</li>
- * <li>the <strong>native scan code</strong>, which on Windows is the only thing java-cef
- *     reads — it maps it with {@code MapVirtualKey}, and a key event without one arrives at
- *     the page as no key at all.</li>
- * </ul>
- *
- * <p>Unknown keys answer zero rather than guessing. A key the page never hears about is a
- * missing feature; a key it hears about as the wrong one is a bug nobody can explain.
+ * <p>Each key yields two numbers: the GLFW key code, and the native scan code, which on
+ * Windows is the only one java-cef reads. Unknown keys answer zero rather than guessing.
  */
 final class SdlKeys {
 
