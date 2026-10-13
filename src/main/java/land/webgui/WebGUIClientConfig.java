@@ -23,8 +23,28 @@ public final class WebGUIClientConfig {
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
+    /** As fast as this setting goes. Past it a notch throws a page across its own length. */
+    public static final int SCROLL_MAX = 40;
+
     /** Off by default: a developer's tool, and it makes the log noisier. */
     private boolean devTools = false;
+
+    /** How often the browser may paint. 0 leaves whatever CEF defaults to. */
+    private int browserFrameRate = 144;
+
+    /**
+     * How many wheel notches a page is told about for each one the game reports.
+     *
+     * One for one is what a browser does, and in a page it reads as barely moving — the game
+     * counts a notch where a desktop browser counts several lines.
+     */
+    private int scrollNotches = 25;
+
+    /** Whether Chromium opens the system save dialog instead of filing downloads itself. */
+    private boolean askWhereToSaveDownloads = false;
+
+    /** Whether a page may start audio or video without the player touching it first. */
+    private boolean allowPageAutoplay = false;
 
     private static WebGUIClientConfig instance = new WebGUIClientConfig();
 
@@ -68,11 +88,62 @@ public final class WebGUIClientConfig {
         return instance.devTools;
     }
 
+    public static int browserFrameRate() {
+        return Math.max(0, instance.browserFrameRate);
+    }
+
+    /** Clamped, because a hand-edited zero would stop a page scrolling at all. */
+    public static int scrollNotches() {
+        return Math.min(SCROLL_MAX, Math.max(1, instance.scrollNotches));
+    }
+
+    public static void setScrollNotches(int value) {
+        int wanted = Math.min(SCROLL_MAX, Math.max(1, value));
+        if (instance.scrollNotches == wanted) {
+            return;
+        }
+        instance.scrollNotches = wanted;
+        save();
+    }
+
     public static void setDevTools(boolean value) {
         if (instance.devTools == value) {
             return;
         }
         instance.devTools = value;
+        save();
+    }
+
+    public static boolean askWhereToSaveDownloads() {
+        return instance.askWhereToSaveDownloads;
+    }
+
+    public static void setAskWhereToSaveDownloads(boolean value) {
+        if (instance.askWhereToSaveDownloads == value) {
+            return;
+        }
+        instance.askWhereToSaveDownloads = value;
+        save();
+    }
+
+    public static boolean allowPageAutoplay() {
+        return instance.allowPageAutoplay;
+    }
+
+    public static void setAllowPageAutoplay(boolean value) {
+        if (instance.allowPageAutoplay == value) {
+            return;
+        }
+        instance.allowPageAutoplay = value;
+        save();
+    }
+
+    public static void setBrowserFrameRate(int value) {
+        int wanted = Math.max(0, value);
+        if (instance.browserFrameRate == wanted) {
+            return;
+        }
+        instance.browserFrameRate = wanted;
         save();
     }
 }

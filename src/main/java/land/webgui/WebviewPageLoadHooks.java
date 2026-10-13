@@ -1,33 +1,26 @@
 package land.webgui;
 
-import de.keksuccino.rinku.Rinku;
-import de.keksuccino.rinku.RinkuBrowser;
-//? if fabric {
-import net.minecraft.client.MinecraftClient;
-//? } else {
-/*import net.minecraft.client.Minecraft;*/
-//? }
-import org.cef.browser.CefBrowser;
-import org.cef.browser.CefFrame;
-import org.cef.handler.CefLoadHandler;
-import org.cef.handler.CefLoadHandlerAdapter;
+import land.webgui.browser.WebBrowser;
+import net.minecraft.client.Minecraft;
 
 public final class WebviewPageLoadHooks {
     private WebviewPageLoadHooks() {}
 
     public static void register() {
-        Rinku.getClient().addLoadHandler(new CefLoadHandlerAdapter() {
+        // Attached to every browser as it opens, rather than to the engine once: java-cef
+        // keeps a single load handler per client and the engine's own is in that slot.
+        WebBrowser.addListener(new WebBrowser.Listener() {
 
             @Override
-            public void onLoadStart(CefBrowser browser, CefFrame frame,
-                                    org.cef.network.CefRequest.TransitionType transitionType) {
-                RinkuBrowser active = WebSession.browser();
+            public void onLoadStart(WebBrowser browser, String url) {
+                WebBrowser active = WebSession.browser();
                 if (active == null || browser != active) return;
 
                 // Here rather than where the browser is created: the protocol needs a
                 // browser that exists natively, and the first load is the earliest point
                 // where that is certainly true.
                 WebGUIDevTools.attachOnce(active);
+                WebGUIBrowserTuning.applyOnce(active);
 
                 // Before the document's own scripts, not after them. Injecting only at
                 // load end meant a plain <script> touching window.webgui threw, because
@@ -46,17 +39,13 @@ public final class WebviewPageLoadHooks {
             }
 
             @Override
-            public void onLoadEnd(CefBrowser browser, CefFrame frame, int httpStatusCode) {
-                RinkuBrowser active = WebSession.browser();
+            public void onLoadEnd(WebBrowser browser, String url, int httpStatusCode) {
+                WebBrowser active = WebSession.browser();
                 if (active == null || browser != active) return;
 
                 injectBridgeScript(active);
 
-                //? if fabric {
-                MinecraftClient mc = MinecraftClient.getInstance();
-                //? } else {
-                /*Minecraft mc = Minecraft.getInstance();*/
-                //? }
+                Minecraft mc = Minecraft.getInstance();
                 if (mc != null) {
                     mc.execute(() -> WebviewClientBridge.pushAfterDocumentLoad(mc));
                 }
@@ -77,10 +66,9 @@ public final class WebviewPageLoadHooks {
             }
 
             @Override
-            public void onLoadError(CefBrowser browser, CefFrame frame,
-                                    CefLoadHandler.ErrorCode errorCode,
-                                    String errorText, String failedUrl) {
-                RinkuBrowser active = WebSession.browser();
+            public void onLoadFailed(WebBrowser browser, String failedUrl, int errorCode,
+                                     String errorText) {
+                WebBrowser active = WebSession.browser();
                 if (active == null || browser != active) return;
 
                 // A death page that will not load would otherwise leave the player
@@ -100,7 +88,7 @@ public final class WebviewPageLoadHooks {
         });
     }
 
-    private static void injectBridgeScript(RinkuBrowser browser) {
+    private static void injectBridgeScript(WebBrowser browser) {
         try {
             String url = browser.getURL();
             browser.executeJavaScript(WebviewScriptInject.bridgeSetup(WebGUIAssetServer.base(), WebSession.mode() == WebSession.Mode.HUD_OVERLAY), url != null ? url : "", 0);

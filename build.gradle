@@ -1,8 +1,18 @@
 plugins {
-    id 'fabric-loom'       version '1.16.+' apply false
+    // Two Loom plugins, one artifact and one version. Minecraft 26.1 ships unobfuscated, so
+    // there is nothing left to remap and no mapping file to ask for; the older versions still
+    // need both. Fabric splits that into two plugin ids rather than one plugin with a switch,
+    // and because they are the same artifact they sit on the build classpath together —
+    // which is what makes one Gradle build able to cover both eras at all.
+    id 'net.fabricmc.fabric-loom-remap' version '1.18.4' apply false
+    id 'net.fabricmc.fabric-loom'       version '1.18.4' apply false
     id 'net.neoforged.moddev' version '2.0.+' apply false
     id 'maven-publish'
 }
+
+// Whether this Minecraft ships unobfuscated. Set in the version's own gradle.properties, not
+// worked out from the number: the line is where Mojang drew it, not where a comparison would.
+def unobfuscated = project.findProperty('unobfuscated') == 'true' 
 
 // Version-specific properties are loaded automatically by Stonecutter
 // from versions/{active}/gradle.properties.
@@ -15,11 +25,9 @@ stonecutter.constants {
     put "fabric", (sc_loader == "fabric")
 }
 
-// NeoForge uses Mojang mappings: currentScreen → screen
-if (sc_loader != "fabric") {
-    stonecutter.swaps {
-        put "currentScreen", "screen"
-    }
+// Both loaders are on Mojang mappings now, so this is no longer loader-specific.
+stonecutter.swaps {
+    put "currentScreen", "screen"
 }
 
 base {
@@ -31,7 +39,7 @@ base {
 
 // Apply the loader-specific plugin after the stonecutter constants are set
 if (sc_loader == "fabric") {
-    apply plugin: 'fabric-loom'
+    apply plugin: unobfuscated ? 'net.fabricmc.fabric-loom' : 'net.fabricmc.fabric-loom-remap'
 } else {
     apply plugin: 'net.neoforged.moddev'
 }
@@ -57,37 +65,26 @@ repositories {
 if (sc_loader == "fabric") {
     dependencies {
         minecraft "com.mojang:minecraft:${minecraft_version}"
-        mappings  "net.fabricmc:yarn:${yarn_mappings}:v2"
-        modImplementation "net.fabricmc:fabric-loader:${loader_version}"
-        modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
-        include(modImplementation("maven.modrinth:rinku:${rinku_version}"))
-        // Compiled against, never shipped and never required: it is only needed to
-        // implement the entrypoint that puts a Config button in its list.
-        modCompileOnly("maven.modrinth:modmenu:${modmenu_version}")
+        if (unobfuscated) {
+            // No mappings at all, and nothing is remapped: from 26.1 the game carries its own
+            // names and its parameter names with it. A dependency needs no `mod` prefix for
+            // the same reason — there is nothing to translate on the way in.
+            implementation "net.fabricmc:fabric-loader:${loader_version}"
+            implementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
+            compileOnly("maven.modrinth:modmenu:${modmenu_version}")
+        } else {
+            // Mojang's own, not Yarn. Yarn stopped at 1.21.11 and is no longer supported by
+            // Fabric, which tells mods to move before going near Minecraft 26 — so both
+            // loaders now speak the same names and this mod has one set, not two.
+            mappings loom.officialMojangMappings()
+            modImplementation "net.fabricmc:fabric-loader:${loader_version}"
+            modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
+            // Compiled against, never shipped and never required: it is only needed to
+            // implement the entrypoint that puts a Config button in its list.
+            modCompileOnly("maven.modrinth:modmenu:${modmenu_version}")
+        }
     }
 } else {
-    configurations {
-        rinkuArtifact
-    }
-
-    // Rinku is a client-side library, and NeoForge's dev dist cleaner strips
-    // the client classes it constructs against. A plain `runtimeOnly` feeds
-    // BOTH dev runs, so runServer used to die during mod loading with
-    // NoClassDefFoundError on Screen — on every Minecraft 26 build, and never
-    // caught because 26.x had no server smoke test. moddev's per-run classpath
-    // is gone on modern Minecraft ("no additional classpath anymore"), so scope
-    // it by installing the jar into the client run's mods folder instead. That
-    // also mirrors production, where a server operator simply never installs
-    // Rinku and WebGUI never declares it as a dependency.
-    def installRinkuForClientRun = tasks.register('installRinkuForClientRun', Copy) {
-        from configurations.rinkuArtifact
-        into layout.projectDirectory.dir('run/mods')
-    }
-
-    def removeRinkuForServerRun = tasks.register('removeRinkuForServerRun', Delete) {
-        delete fileTree(layout.projectDirectory.dir('run/mods')) { include 'rinku*.jar' }
-    }
-
     neoForge {
         version = project.neoforge_version
         // Register the mod so moddev's JUnit runtime can load it during tests.
@@ -106,72 +103,95 @@ if (sc_loader == "fabric") {
         runs {
             client {
                 client()
-                // Rinku reaches the client the way a player installs it: as a
-                // jar in the mods folder, not on the runtime classpath. Keeping
-                // it off the classpath is what keeps runServer alive — see the
-                // installRinkuForClientRun task below.
-                taskBefore(installRinkuForClientRun)
             }
             server {
                 server()
-                // Both dev runs share versions/<target>/run, so the jar dropped in
-                // for the client is also visible to the server — which is exactly
-                // what kills it. Take it back out before the server starts.
-                taskBefore(removeRinkuForServerRun)
             }
-        }
-    }
-
-
-    // Rinku ships its NeoForge builds inconsistently: 26.2 has classes at the
-    // top level, but 1.21.1 and 26.1.2 are jarJar wrappers whose real mod sits
-    // in META-INF/jarjar/. NeoForge unpacks that at runtime, so the game is
-    // happy either way — javac is not, and sees an empty jar. Compile against
-    // whatever actually holds the classes; the published artifact stays on the
-    // runtime classpath untouched.
-    dependencies {
-        rinkuArtifact "maven.modrinth:rinku:${rinku_version}"
-    }
-
-    def rinkuClassesDir = layout.buildDirectory.dir('rinku-compile')
-    def unwrapRinku = tasks.register('unwrapRinku') {
-        def artifact = configurations.rinkuArtifact
-        inputs.files(artifact)
-        outputs.dir(rinkuClassesDir)
-        doLast {
-            def dir = rinkuClassesDir.get().asFile
-            dir.deleteDir()
-            dir.mkdirs()
-            def outer = artifact.singleFile
-            def target = new File(dir, 'rinku.jar')
-            new java.util.zip.ZipFile(outer).withCloseable { zip ->
-                def nested = zip.entries().toList().find {
-                    it.name.startsWith('META-INF/jarjar/') && it.name.endsWith('.jar')
-                }
-                if (nested != null) {
-                    target.withOutputStream { out -> out << zip.getInputStream(nested) }
-                    logger.lifecycle("rinku: compiling against nested ${nested.name}")
-                } else {
-                    target.bytes = outer.bytes
-                }
-            }
-        }
-    }
-
-    dependencies {
-        // Point at the jar itself, not the directory holding it — a directory
-        // on the compile classpath is searched for loose .class files only.
-        compileOnly files(rinkuClassesDir.map { it.file('rinku.jar') }) {
-            builtBy unwrapRinku
         }
     }
 }
+
+// --- The browser ---
+//
+// Chromium is ours now: there is no browser mod to install beside this one, and nothing
+// here depends on one. What is needed at build time is the java-cef Java classes — a couple
+// of hundred kilobytes of JNI declarations — and they are baked into the jar below rather
+// than shipped as a library of their own.
+//
+// Nothing is relocated on the way in. The native side binds to these classes by name, so
+// `org.cef.Foo` moved to `land.webgui.shadow.org.cef.Foo` links against nothing at the first
+// JNI call. It also has to land in the same jar as our own `org.cef.browser.OffscreenBrowser`,
+// which reaches package-private state upstream never exposed: split across two jars, NeoForge's
+// module layer refuses the package outright.
+//
+// The version must stay equal to NativeBundles.JCEF_VERSION — the classes are the JNI
+// declarations for the libraries in that exact bundle, and a mismatch is a missing symbol at
+// the first call rather than an error here. WmcNativeBundlesTest asserts the two agree.
+def jcefVersion = 'jcef-ca49ada+cef-135.0.20+ge7de5c3+chromium-135.0.7049.85'
+
+configurations {
+    jcef
+    // Compiled against, never handed to the loader as a library: the classes are unpacked
+    // into this mod's own output below, so they are part of it everywhere.
+    compileOnly.extendsFrom jcef
+}
+
+dependencies {
+    // Its OpenGL dependencies exist for the AWT-canvas browser upstream provides, which is
+    // the one thing a Minecraft integration can never use: ten megabytes for a class that is
+    // never loaded.
+    jcef("me.friwi:jcef-api:${jcefVersion}") {
+        exclude group: 'me.friwi', module: 'jogl-all'
+        exclude group: 'me.friwi', module: 'gluegen-rt'
+    }
+}
+
+// Unpacked into this mod's own class output rather than kept as a library beside it.
+//
+// One mechanism covering three places at once: the jar gets the classes, a dev run gets them,
+// and — the reason it has to be this way — NeoForge puts every mod in a JPMS module, where a
+// package may live in only one. Our own org.cef.browser.OffscreenBrowser reaches
+// package-private state upstream never exposed, so it must sit in that package; with
+// jcef-api beside the mod as a module of its own, the game refuses to start:
+//
+//   Module webgui contains package org.cef.browser, module jcef.api... exports package
+//   org.cef.browser to webgui
+//
+// Fabric's flat class loader does not care, which is why this only showed up on the other
+// loader, three targets in.
+def unpackJcef = tasks.register('unpackJcef', Copy) {
+    from({ configurations.jcef.collect { zipTree(it) } }) {
+        // Upstream's own metadata, which says nothing about this mod: an index that is now
+        // wrong, signatures that no longer match, and a module declaration that would put
+        // these classes straight back into a module of their own.
+        exclude 'META-INF/INDEX.LIST'
+        exclude 'META-INF/*.SF'
+        exclude 'META-INF/*.DSA'
+        exclude 'META-INF/*.RSA'
+        exclude 'META-INF/MANIFEST.MF'
+        exclude 'module-info.class'
+        // Kept, and renamed so it does not sit on top of ours: java-cef is BSD-3-Clause and
+        // its terms travel with the bytes.
+        rename(~/^LICENSE\.txt$/, 'META-INF/licenses/jcef-LICENSE.txt')
+        rename(~/^README\.txt$/, 'META-INF/licenses/jcef-README.txt')
+    }
+    into layout.buildDirectory.dir('jcef-classes')
+}
+
+sourceSets.main.output.dir(layout.buildDirectory.dir('jcef-classes'), builtBy: unpackJcef)
 
 // --- Testing ---
 dependencies {
     testImplementation platform("org.junit:junit-bom:5.10.2")
     testImplementation "org.junit.jupiter:junit-jupiter"
     testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+    // Test-only, and deliberately: the tar reader is checked against archives a real tar
+    // writer produced, not against ones written by the same code that reads them. Nothing
+    // of this reaches the jar.
+    // Pinned old and kept non-transitive on purpose. Only the tar writer is wanted, and
+    // newer releases drag in commons-io and commons-codec at versions Minecraft pins
+    // strictly to older ones — which resolves to nothing at all on NeoForge 1.21.1.
+    testImplementation("org.apache.commons:commons-compress:1.21") { transitive = false }
     if (sc_loader == "fabric") {
         // Bootstraps Minecraft + the Fabric loader inside JUnit so the launch
         // smoke test (@Tag("launch")) can assert the mod actually loads.
@@ -181,6 +201,8 @@ dependencies {
 }
 
 test {
+    // So a test can insist the Java classes and the pinned bundle name the same build.
+    systemProperty 'wmc.jcefVersion', jcefVersion
     useJUnitPlatform {
         if (sc_loader == "fabric") {
             // Fabric runs the launch test in the separate `launchTest` task so
@@ -210,9 +232,25 @@ tasks.register('launchTest', Test) {
     }
 }
 
+// By number, so that "26.3" sorts after "1.21.11" rather than before it.
+static boolean atLeast(String version, String floor) {
+    def have = version.tokenize('.').collect { it.toInteger() }
+    def want = floor.tokenize('.').collect { it.toInteger() }
+    for (int i = 0; i < Math.max(have.size(), want.size()); i++) {
+        int a = i < have.size() ? have[i] : 0
+        int b = i < want.size() ? want[i] : 0
+        if (a != b) {
+            return a > b
+        }
+    }
+    return true
+}
+
 processResources {
     inputs.property 'version',         project.version
     inputs.property 'minecraft_range', project.minecraft_range
+    // Declared, or the rename below is invisible to the up-to-date check.
+    inputs.property 'iconKey',         atLeast(project.minecraft_version, '26.3')
     if (sc_loader == "fabric") {
         // Don't ship NeoForge metadata in the Fabric jar, or loaders/Modrinth
         // mis-detect it as a NeoForge mod too.
@@ -223,12 +261,16 @@ processResources {
     } else {
         // Likewise, keep Fabric metadata out of the NeoForge jar. The death-screen
         // mixin goes with it: NeoForge replaces the screen through ScreenEvent
-        // instead, and the mixin targets Yarn's MinecraftClient, which does not
-        // exist under Mojang mappings.
+        // instead, so applying the mixin there would swap the screen twice.
         exclude 'fabric.mod.json'
         exclude 'webgui.fabric.mixins.json'
         filesMatching('META-INF/neoforge.mods.toml') {
             expand version: project.version, minecraft_range: project.minecraft_range
+            // NeoForge renamed logoFile to iconFile in 26.3 and warns about the old name.
+            // Renamed here, since earlier versions still need the file as it is.
+            if (atLeast(project.minecraft_version, '26.3')) {
+                filter { line -> line.replaceFirst(/^logoFile(\s*)=/, 'iconFile$1=') }
+            }
         }
         filesMatching('pack.mcmeta') { expand version: project.version }
     }
@@ -268,6 +310,7 @@ def javaVersion = (project.findProperty('java_version') ?: '21').toString().toIn
 
 tasks.withType(JavaCompile).configureEach {
     it.options.encoding = 'UTF-8'
+    it.options.compilerArgs << '-Xmaxerrs' << '3000'
     it.options.release  = javaVersion
 }
 

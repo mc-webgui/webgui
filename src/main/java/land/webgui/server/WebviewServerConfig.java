@@ -39,10 +39,12 @@ public final class WebviewServerConfig {
     private String queryParamName = "webgui_token";
     private String tokenSecretBase64 = "";
 
+    // On unless the file says otherwise, and autoHudUrl points at the page the server
+    // creates for itself, so a fresh server shows something rather than nothing.
     private Boolean autoHudOnJoin;
-    private String autoHudUrl = "";
+    private String autoHudUrl = "webgui://hud.html";
 
-    private String mainMenuUrl = "";
+    private String mainMenuUrl = "webgui://index.html";
 
     // Page shown instead of the vanilla death screen. Empty = keep the vanilla screen.
     private String deathScreenUrl = "";
@@ -62,8 +64,9 @@ public final class WebviewServerConfig {
     // Bundled page bytes one player may pull per second. 0 = no limit.
     private int assetBytesPerSecond = 4 * 1024 * 1024;
 
-    // {"version":"1.2.3"} or GitHub Releases {"tag_name":"v1.2.3","html_url":"..."}; empty = disabled
-    private String updateCheckUrl = "";
+    // Tell operators in chat, on join, when a newer version exists. The notice the server
+    // writes to its console at start is not optional.
+    private Boolean updateNotifyInChat;
 
     // Origins (scheme://host[:port]) whose pages may run commands as the player. Sent to the client
     // on join; the client rejects command requests from any other origin. Empty = no page may run commands.
@@ -89,10 +92,10 @@ public final class WebviewServerConfig {
             o.addProperty("queryParamName", "webgui_token");
             o.addProperty("tokenSecretBase64", "<base64-encoded 32-byte secret — auto-generated in server.json>");
 
-            o.addProperty("autoHudOnJoin", false);
-            o.addProperty("autoHudUrl", "http://your-site.example/hud");
+            o.addProperty("autoHudOnJoin", true);
+            o.addProperty("autoHudUrl", "webgui://hud.html");
 
-            o.addProperty("mainMenuUrl", "http://your-site.example/menu");
+            o.addProperty("mainMenuUrl", "webgui://index.html");
 
             o.addProperty("deathScreenUrl", "");
 
@@ -102,7 +105,7 @@ public final class WebviewServerConfig {
             o.addProperty("requireClientMod", false);
             o.addProperty("pageEventsPerSecond", 20);
 
-            o.addProperty("updateCheckUrl", "");
+            o.addProperty("updateNotifyInChat", true);
 
             JsonArray origins = new JsonArray();
             origins.add("https://your-site.example");
@@ -159,11 +162,6 @@ public final class WebviewServerConfig {
         } else {
             mainMenuUrl = mainMenuUrl.trim();
         }
-        if (updateCheckUrl == null) {
-            updateCheckUrl = "";
-        } else {
-            updateCheckUrl = updateCheckUrl.trim();
-        }
         List<String> cleaned = new ArrayList<>();
         if (trustedCommandOrigins != null) {
             for (String o : trustedCommandOrigins) {
@@ -210,7 +208,7 @@ public final class WebviewServerConfig {
 
     public static boolean autoHudOnJoin() {
         Boolean v = instance.autoHudOnJoin;
-        return v != null && v;
+        return v == null || v;
     }
 
     public static String autoHudUrl() {
@@ -286,9 +284,10 @@ public final class WebviewServerConfig {
         return Math.max(0, instance.assetBytesPerSecond);
     }
 
-    public static String updateCheckUrl() {
-        String u = instance.updateCheckUrl;
-        return u == null ? "" : u.trim();
+    /** Whether operators are told in chat on join. True unless the file says otherwise. */
+    public static boolean updateNotifyInChat() {
+        Boolean v = instance.updateNotifyInChat;
+        return v == null || v;
     }
 
     /** Origins whose pages may run commands as the player. Never null. */

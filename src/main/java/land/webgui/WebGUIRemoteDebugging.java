@@ -7,7 +7,8 @@ package land.webgui;
  * arguments it does not recognise straight through, so {@code --remote-debugging-port}
  * on the game's own command line is enough to get the full inspector.
  *
- * Reported rather than set: by the time any mod runs, that command line is fixed.
+ * The engine is ours, so the mod can also choose the port itself when the settings screen
+ * asks for the tools; {@link #inUse()} is the one Chromium actually got, whichever way.
  */
 public final class WebGUIRemoteDebugging {
 
@@ -17,7 +18,24 @@ public final class WebGUIRemoteDebugging {
 
     private static Integer cached;
 
+    /** The port Chromium was started with, which is not known until it starts. */
+    private static volatile int inUse;
+
     private WebGUIRemoteDebugging() {}
+
+    /** Told by the boot once Chromium has been configured. */
+    public static void started(int port) {
+        inUse = Math.max(0, port);
+    }
+
+    /** The port the inspector is actually on, or 0 while there is none. */
+    public static int inUse() {
+        return inUse;
+    }
+
+    public static boolean reachable() {
+        return inUse > 0;
+    }
 
     /** The port the inspector is listening on, or 0 when the argument was not given. */
     public static synchronized int port() {
@@ -33,8 +51,7 @@ public final class WebGUIRemoteDebugging {
 
     /** The address to open in a browser, or an empty string when it is off. */
     public static String address() {
-        int port = port();
-        return port > 0 ? "http://127.0.0.1:" + port : "";
+        return inUse > 0 ? "http://127.0.0.1:" + inUse : "";
     }
 
     private static int findPort() {

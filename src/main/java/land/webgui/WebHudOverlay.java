@@ -1,21 +1,32 @@
 package land.webgui;
 
-import de.keksuccino.rinku.Rinku;
-import de.keksuccino.rinku.RinkuBrowser;
+import land.webgui.compat.Mc;
+import land.webgui.browser.WebBrowser;
 //? if fabric {
+//? if >=26 {
+/*import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
+*///? } else {
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
-import net.minecraft.client.MinecraftClient;
-//? if >=1.21.5 {
-import net.minecraft.client.gl.RenderPipelines;
 //? }
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.Minecraft;
+//? if >=1.21.5 {
+import net.minecraft.client.renderer.RenderPipelines;
+//? }
+//? if >=26 {
+/*// GuiGraphics is gone from the HUD path in 26: the game extracts render state first.
+*///? } else {
+import net.minecraft.client.gui.GuiGraphics;
+//? }
 //? if >=1.20.5 {
-import net.minecraft.client.render.RenderTickCounter;
+import net.minecraft.client.DeltaTracker;
 //? }
 //? if >=1.21.5 {
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.Identifier;
 //? }
-import net.minecraft.text.Text;
+//? if >=26 {
+/*import net.minecraft.client.gui.GuiGraphicsExtractor;
+*///? }
+import net.minecraft.network.chat.Component;
 //? } else {
 /*import net.minecraft.client.Minecraft;
 //? if >=1.21.5 {
@@ -55,23 +66,11 @@ public final class WebHudOverlay {
         hudInteractive = value;
     }
 
-    //? if fabric {
-    public static boolean shouldDeliverHudBrowserInput(MinecraftClient client) {
-    //? } else {
-    /*public static boolean shouldDeliverHudBrowserInput(Minecraft client) {*/
-    //? }
-        if (client == null || !Rinku.isInitialized()) {
+    public static boolean shouldDeliverHudBrowserInput(Minecraft client) {
+        if (client == null || !WebBrowser.ready()) {
             return false;
         }
-        //? if fabric {
-        boolean hasGui1 = client.currentScreen != null;
-        //? } else {
-        /*//? if >=26.2-neoforge {
-        boolean hasGui1 = client.gui.screen() != null;
-        //? } else {
-        boolean hasGui1 = client.screen != null;
-        //? }*/
-        //? }
+        boolean hasGui1 = Mc.screen(client) != null;
         if (!hudVisible || !hudInteractive || hasGui1) {
             return false;
         }
@@ -81,23 +80,11 @@ public final class WebHudOverlay {
         return WebSession.browser() != null;
     }
 
-    //? if fabric {
-    public static boolean shouldForwardHudArrowKeys(MinecraftClient client) {
-    //? } else {
-    /*public static boolean shouldForwardHudArrowKeys(Minecraft client) {*/
-    //? }
-        if (client == null || !Rinku.isInitialized()) {
+    public static boolean shouldForwardHudArrowKeys(Minecraft client) {
+        if (client == null || !WebBrowser.ready()) {
             return false;
         }
-        //? if fabric {
-        boolean hasGui2 = client.currentScreen != null;
-        //? } else {
-        /*//? if >=26.2-neoforge {
-        boolean hasGui2 = client.gui.screen() != null;
-        //? } else {
-        boolean hasGui2 = client.screen != null;
-        //? }*/
-        //? }
+        boolean hasGui2 = Mc.screen(client) != null;
         if (!hudVisible || hasGui2) {
             return false;
         }
@@ -110,98 +97,42 @@ public final class WebHudOverlay {
         return WebSession.browser() != null;
     }
 
-    //? if fabric {
-    public static boolean shouldBlockVanillaWorldInteractions(MinecraftClient client) {
-    //? } else {
-    /*public static boolean shouldBlockVanillaWorldInteractions(Minecraft client) {*/
-    //? }
-        //? if fabric {
-        if (client == null || client.currentScreen != null) {
-        //? } else {
-        /*//? if >=26.2-neoforge {
-        if (client == null || client.gui.screen() != null) {
-        //? } else {
-        if (client == null || client.screen != null) {
-        //? }*/
-        //? }
+    public static boolean shouldBlockVanillaWorldInteractions(Minecraft client) {
+        if (client == null || Mc.screen(client) != null) {
             return false;
         }
         if (!hudVisible || !hudInteractive) {
             return false;
         }
-        //? if fabric {
-        return client.world != null && client.world.isClient();
-        //? } else {
-        /*return client.level != null;*/
-        //? }
+        return client.level != null;
     }
 
-    //? if fabric {
-    public static void tickCursor(MinecraftClient client) {
-    //? } else {
-    /*public static void tickCursor(Minecraft client) {*/
-    //? }
-        //? if fabric {
-        if (client.currentScreen != null) {
-        //? } else {
-        /*//? if >=26.2-neoforge {
-        if (client.gui.screen() != null) {
-        //? } else {
-        if (client.screen != null) {
-        //? }*/
-        //? }
+    public static void tickCursor(Minecraft client) {
+        if (Mc.screen(client) != null) {
             return;
         }
         if (!hudVisible) {
             if (cursorUnlockedForWebHud) {
-                //? if fabric {
-                client.mouse.lockCursor();
-                //? } else {
-                /*client.mouseHandler.grabMouse();*/
-                //? }
+                client.mouseHandler.grabMouse();
                 cursorUnlockedForWebHud = false;
             }
             return;
         }
         if (hudInteractive) {
-            //? if fabric {
-            client.mouse.unlockCursor();
-            //? } else {
-            /*client.mouseHandler.releaseMouse();*/
-            //? }
+            client.mouseHandler.releaseMouse();
             cursorUnlockedForWebHud = true;
             return;
         }
         if (cursorUnlockedForWebHud) {
-            //? if fabric {
-            client.mouse.lockCursor();
-            //? } else {
-            /*client.mouseHandler.grabMouse();*/
-            //? }
+            client.mouseHandler.grabMouse();
             cursorUnlockedForWebHud = false;
         }
     }
 
-    //? if fabric {
-    public static void applyServerOpen(MinecraftClient client, String url) {
-    //? } else {
-    /*public static void applyServerOpen(Minecraft client, String url) {*/
-    //? }
+    public static void applyServerOpen(Minecraft client, String url) {
         String u = url == null || url.isBlank() ? StartUrls.primary() : url;
-        //? if fabric {
-        if (client.currentScreen != null) {
-        //? } else {
-        /*//? if >=26.2-neoforge {
-        if (client.gui.screen() != null) {
-        //? } else {
-        if (client.screen != null) {
-        //? }*/
-        //? }
-            //? if >=26.2-neoforge {
-            /*client.gui.setScreen(null);*/
-            //? } else {
-            client.setScreen(null);
-            //? }
+        if (Mc.screen(client) != null) {
+            Mc.openScreen(client, null);
         }
         restoreHudAfterGuiClose = false;
         hudVisible = true;
@@ -213,23 +144,11 @@ public final class WebHudOverlay {
         resizeBrowser(client);
     }
 
-    //? if fabric {
-    public static void toggleHud(MinecraftClient client) {
-    //? } else {
-    /*public static void toggleHud(Minecraft client) {*/
-    //? }
-        //? if fabric {
-        if (client.currentScreen instanceof WebViewScreen) {
-        //? } else {
-        /*//? if >=26.2-neoforge {
-        if (client.gui.screen() instanceof WebViewScreen) {
-        //? } else {
-        if (client.screen instanceof WebViewScreen) {
-        //? }*/
-        //? }
+    public static void toggleHud(Minecraft client) {
+        if (Mc.screen(client) instanceof WebViewScreen) {
             return;
         }
-        if (!Rinku.isInitialized()) {
+        if (!WebBrowser.ready()) {
             notifyMcefMissing(client);
             return;
         }
@@ -241,11 +160,7 @@ public final class WebHudOverlay {
             lastPixelW = -1;
             lastPixelH = -1;
             if (cursorUnlockedForWebHud) {
-                //? if fabric {
-                client.mouse.lockCursor();
-                //? } else {
-                /*client.mouseHandler.grabMouse();*/
-                //? }
+                client.mouseHandler.grabMouse();
                 cursorUnlockedForWebHud = false;
             }
         } else {
@@ -257,40 +172,20 @@ public final class WebHudOverlay {
         }
     }
 
-    //? if fabric {
-    public static void toggleInteractive(MinecraftClient client) {
-    //? } else {
-    /*public static void toggleInteractive(Minecraft client) {*/
-    //? }
-        if (!Rinku.isInitialized()) {
+    public static void toggleInteractive(Minecraft client) {
+        if (!WebBrowser.ready()) {
             return;
         }
-        //? if fabric {
-        boolean hasGui7 = client.currentScreen != null;
-        //? } else {
-        /*//? if >=26.2-neoforge {
-        boolean hasGui7 = client.gui.screen() != null;
-        //? } else {
-        boolean hasGui7 = client.screen != null;
-        //? }*/
-        //? }
+        boolean hasGui7 = Mc.screen(client) != null;
         if (!hudVisible || hasGui7) {
             return;
         }
         hudInteractive = !hudInteractive;
         if (hudInteractive) {
-            //? if fabric {
-            client.mouse.unlockCursor();
-            //? } else {
-            /*client.mouseHandler.releaseMouse();*/
-            //? }
+            client.mouseHandler.releaseMouse();
             cursorUnlockedForWebHud = true;
         } else if (cursorUnlockedForWebHud) {
-            //? if fabric {
-            client.mouse.lockCursor();
-            //? } else {
-            /*client.mouseHandler.grabMouse();*/
-            //? }
+            client.mouseHandler.grabMouse();
             cursorUnlockedForWebHud = false;
         }
     }
@@ -314,11 +209,7 @@ public final class WebHudOverlay {
         lastPixelH = -1;
     }
 
-    //? if fabric {
     public static void onGuiOpened() {
-    //? } else {
-    /*public static void onGuiOpened() {*/
-    //? }
         // Only decided when a gui is opening over the hud. A gui replacing another gui
         // runs this too, and by then the mode is already GUI_SCREEN, so recomputing it
         // here answered "there is no hud to put back" and threw the parked one away.
@@ -328,26 +219,14 @@ public final class WebHudOverlay {
         hudInteractive = false;
         lastPixelW = -1;
         lastPixelH = -1;
-        //? if fabric {
-        MinecraftClient c = MinecraftClient.getInstance();
-        //? } else {
-        /*Minecraft c = Minecraft.getInstance();*/
-        //? }
+        Minecraft c = Minecraft.getInstance();
         if (cursorUnlockedForWebHud && c != null) {
-            //? if fabric {
-            c.mouse.lockCursor();
-            //? } else {
-            /*c.mouseHandler.grabMouse();*/
-            //? }
+            c.mouseHandler.grabMouse();
             cursorUnlockedForWebHud = false;
         }
     }
 
-    //? if fabric {
-    public static void onGuiClosed(MinecraftClient client) {
-    //? } else {
-    /*public static void onGuiClosed(Minecraft client) {*/
-    //? }
+    public static void onGuiClosed(Minecraft client) {
         if (!restoreHudAfterGuiClose) {
             return;
         }
@@ -361,7 +240,7 @@ public final class WebHudOverlay {
         }
     }
 
-    static void onHudBrowserLoadStart(RinkuBrowser browser) {
+    static void onHudBrowserLoadStart(WebBrowser browser) {
         if (browser == null) {
             return;
         }
@@ -370,7 +249,7 @@ public final class WebHudOverlay {
         }
     }
 
-    static void onHudBrowserLoadFinished(RinkuBrowser browser) {
+    static void onHudBrowserLoadFinished(WebBrowser browser) {
         if (browser == null) {
             return;
         }
@@ -381,9 +260,19 @@ public final class WebHudOverlay {
     }
 
     //? if fabric {
+    //? if >=26 {
+    /*public static void register() {
+        // Not an event any more: 26 keeps an ordered list of HUD elements, and a mod adds
+        // one rather than hooking the whole HUD being drawn. Last, so the page sits over
+        // the game's own bars rather than under them.
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath(WebGUIMod.MOD_ID, "page"),
+                WebHudOverlay::onHudRender);
+    }
+    *///? } else {
     public static void register() {
         HudRenderCallback.EVENT.register(WebHudOverlay::onHudRender);
     }
+    //? }
     //? } else {
     /*public static void register() {
         NeoForge.EVENT_BUS.addListener(WebHudOverlay::onHudRender);
@@ -391,10 +280,14 @@ public final class WebHudOverlay {
     //? }
 
     //? if fabric {
+    //? if >=26 {
+    /*private static void onHudRender(GuiGraphicsExtractor context, DeltaTracker tickCounter) {
+    *///? } else {
     //? if >=1.20.5 {
-    private static void onHudRender(DrawContext context, RenderTickCounter tickCounter) {
+    private static void onHudRender(GuiGraphics context, DeltaTracker tickCounter) {
     //? } else {
-    /*private static void onHudRender(DrawContext context, float tickDelta) {*/
+    /*private static void onHudRender(GuiGraphics context, float tickDelta) {*/
+    //? }
     //? }
     //? } else {
     /*//? if >=1.20.5 {
@@ -412,102 +305,60 @@ public final class WebHudOverlay {
         if (!hudVisible) {
             return;
         }
-        RinkuBrowser browser = WebSession.hudBrowser();
+        WebBrowser browser = WebSession.hudBrowser();
         if (browser == null) {
             return;
         }
-        //? if fabric {
-        MinecraftClient client = MinecraftClient.getInstance();
-        //? } else {
-        /*Minecraft client = Minecraft.getInstance();*/
-        //? }
+        Minecraft client = Minecraft.getInstance();
 
         resizeBrowser(client);
 
         if (!hudPageReady) {
             return;
         }
-        //? if fabric {
-        if (!browser.isTextureReady()) {
-            return;
-        }
-        //? if >=1.21.5 {
-        net.minecraft.util.Identifier tex = browser.getTextureIdentifier();
-        //? } else {
-        /*net.minecraft.util.Identifier tex = browser.getTextureIdentifier();*/
-        //? }
-        if (tex == null) {
-            return;
-        }
-        int sw = client.getWindow().getScaledWidth();
-        int sh = client.getWindow().getScaledHeight();
-        //? if >=1.21.5 {
-        context.drawTexture(RenderPipelines.GUI_TEXTURED, tex, 0, 0, 0f, 0f, sw, sh, sw, sh);
-        //? } else {
-        /*context.drawTexture(tex, 0, 0, 0, 0f, 0f, sw, sh, sw, sh);*/
-        //? }
-        //? } else {
-        /*if (!browser.isTextureReady()) return;
+        if (!browser.isTextureReady()) return;
         //? if >=1.21.5 {
         net.minecraft.resources.Identifier tex = browser.getTextureIdentifier();
         //? } else {
-        net.minecraft.resources.ResourceLocation tex = browser.getTextureIdentifier();
-        //? }
+        /*net.minecraft.resources.ResourceLocation tex = browser.getTextureIdentifier();
+        *///? }
         if (tex == null) return;
         int sw = client.getWindow().getGuiScaledWidth();
         int sh = client.getWindow().getGuiScaledHeight();
         //? if >=1.21.5 {
         context.blit(RenderPipelines.GUI_TEXTURED, tex, 0, 0, 0f, 0f, sw, sh, sw, sh);
         //? } else {
-        context.blit(tex, 0, 0, 0f, 0f, sw, sh, sw, sh);
-        //? }*/
-        //? }
+        /*context.blit(tex, 0, 0, 0f, 0f, sw, sh, sw, sh);
+        *///? }
+        // Only while the HUD holds the mouse, or a player looking around gets the page's cursor.
+        //? if >26.2 {
+        /*if (hudInteractive) {
+            browser.requestCursor(context);
+        }
+        *///? }
     }
 
-    //? if fabric {
-    public static boolean containsMouse(double mouseX, double mouseY, MinecraftClient client) {
-    //? } else {
-    /*public static boolean containsMouse(double mouseX, double mouseY, Minecraft client) {*/
-    //? }
+    public static boolean containsMouse(double mouseX, double mouseY, Minecraft client) {
         if (!hudVisible) {
             return false;
         }
-        //? if fabric {
-        int sw = client.getWindow().getScaledWidth();
-        int sh = client.getWindow().getScaledHeight();
-        //? } else {
-        /*int sw = client.getWindow().getGuiScaledWidth();
-        int sh = client.getWindow().getGuiScaledHeight();*/
-        //? }
+        int sw = client.getWindow().getGuiScaledWidth();
+        int sh = client.getWindow().getGuiScaledHeight();
         return mouseX >= 0 && mouseY >= 0 && mouseX < sw && mouseY < sh;
     }
 
-    //? if fabric {
-    public static int toBrowserLocalX(double mouseX, MinecraftClient client) {
-        int sw = client.getWindow().getScaledWidth();
-    //? } else {
-    /*public static int toBrowserLocalX(double mouseX, Minecraft client) {
-        int sw = client.getWindow().getGuiScaledWidth();*/
-    //? }
+    public static int toBrowserLocalX(double mouseX, Minecraft client) {
+        int sw = client.getWindow().getGuiScaledWidth();
         return (int) Math.round(mouseX * browserViewSize(client)[0] / (double) Math.max(1, sw));
     }
 
-    //? if fabric {
-    public static int toBrowserLocalY(double mouseY, MinecraftClient client) {
-        int sh = client.getWindow().getScaledHeight();
-    //? } else {
-    /*public static int toBrowserLocalY(double mouseY, Minecraft client) {
-        int sh = client.getWindow().getGuiScaledHeight();*/
-    //? }
+    public static int toBrowserLocalY(double mouseY, Minecraft client) {
+        int sh = client.getWindow().getGuiScaledHeight();
         return (int) Math.round(mouseY * browserViewSize(client)[1] / (double) Math.max(1, sh));
     }
 
-    //? if fabric {
-    static void resizeBrowser(MinecraftClient client) {
-    //? } else {
-    /*static void resizeBrowser(Minecraft client) {*/
-    //? }
-        RinkuBrowser browser = WebSession.hudBrowser();
+    static void resizeBrowser(Minecraft client) {
+        WebBrowser browser = WebSession.hudBrowser();
         if (browser == null) {
             return;
         }
@@ -523,32 +374,20 @@ public final class WebHudOverlay {
     }
 
     // Browser view size = physical framebuffer px; page zoom keeps the CSS viewport logical.
-    //? if fabric {
-    private static int[] browserViewSize(MinecraftClient client) {
-    //? } else {
-    /*private static int[] browserViewSize(Minecraft client) {*/
-    //? }
+    private static int[] browserViewSize(Minecraft client) {
         var window = client.getWindow();
         return WebViewLayout.browserSize(window.getWidth(), window.getHeight());
     }
 
-    //? if fabric {
-    private static void notifyMcefMissing(MinecraftClient client) {
-        if (client.player != null) {
-            client.player.sendMessage(Text.translatable("message.webgui.mcef_not_ready"), false);
-        }
-    }
-    //? } else {
-    /*private static void notifyMcefMissing(Minecraft client) {
+    private static void notifyMcefMissing(Minecraft client) {
         if (client.player != null) {
             //? if >=26 {
-            client.player.sendSystemMessage(
+            /*client.player.sendSystemMessage(
                     Component.translatable("message.webgui.mcef_not_ready"));
-            //? } else {
+            *///? } else {
             client.player.displayClientMessage(
                     Component.translatable("message.webgui.mcef_not_ready"), false);
             //? }
         }
-    }*/
-    //? }
+    }
 }

@@ -1,6 +1,6 @@
 package land.webgui;
 
-import de.keksuccino.rinku.RinkuBrowser;
+import land.webgui.browser.WebBrowser;
 import com.google.gson.Gson;
 
 public final class WebviewClientEmit {
@@ -10,8 +10,8 @@ public final class WebviewClientEmit {
 
     /** Called on the Minecraft client thread after receiving a WebviewEmitS2CPayload. */
     public static void dispatch(String eventName, String jsonPayload) {
-        RinkuBrowser main = WebSession.browser();
-        RinkuBrowser hud  = WebSession.hudBrowser();
+        WebBrowser main = WebSession.browser();
+        WebBrowser hud  = WebSession.hudBrowser();
         if (main == null && hud == null) return;
 
         // GSON.toJson produces a properly escaped JS string literal, e.g. "\"my\\\"event\""
@@ -38,7 +38,7 @@ public final class WebviewClientEmit {
      * something to read, exactly as {@code window.webgui.client} and {@code .entity} do.
      */
     public static void dispatchDeath(String jsonPayload) {
-        RinkuBrowser main = WebSession.browser();
+        WebBrowser main = WebSession.browser();
         if (main == null) return;
         String data = (jsonPayload == null || jsonPayload.isBlank()) ? "null" : jsonPayload;
         String js = "(function(){"
@@ -52,7 +52,7 @@ public final class WebviewClientEmit {
         executeJs(main, js);
     }
 
-    private static void executeJs(RinkuBrowser browser, String js) {
+    private static void executeJs(WebBrowser browser, String js) {
         try {
             String url = browser.getURL();
             browser.executeJavaScript(js, url != null ? url : "", 0);

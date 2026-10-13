@@ -103,7 +103,8 @@ jobs:
           chmod +x gradlew
           ./gradlew :1.20.1-fabric:build :1.21.1-fabric:build :1.21.11-fabric:build \
                     :1.21.1-neoforge:build :1.21.11-neoforge:build \
-                    :26.1.2-neoforge:build :26.2-neoforge:build --no-daemon
+                    :26.1.2-neoforge:build :26.2-neoforge:build :26.2-fabric:build \
+                    :26.3-fabric:build :26.3-neoforge:build --no-daemon
         env:
           GRADLE_OPTS: -Xmx2g
 
@@ -180,7 +181,6 @@ jobs:
           version: ${{ steps.meta.outputs.version }}+mc1.21.1-neoforge
           version-type: release
           loaders: neoforge
-          dependencies: rinku(required)
           game-versions: '1.21.1'
           changelog: ${{ steps.notes.outputs.body }}
           files: versions/1.21.1-neoforge/build/libs/!(*-@(dev|sources|javadoc)).jar
@@ -196,7 +196,6 @@ jobs:
           version: ${{ steps.meta.outputs.version }}+mc1.21.11-neoforge
           version-type: release
           loaders: neoforge
-          dependencies: rinku(required)
           game-versions: '1.21.11'
           changelog: ${{ steps.notes.outputs.body }}
           files: versions/1.21.11-neoforge/build/libs/!(*-@(dev|sources|javadoc)).jar
@@ -212,7 +211,6 @@ jobs:
           version: ${{ steps.meta.outputs.version }}+mc26.2-neoforge
           version-type: release
           loaders: neoforge
-          dependencies: rinku(required)
           game-versions: '26.2'
           changelog: ${{ steps.notes.outputs.body }}
           files: versions/26.2-neoforge/build/libs/!(*-@(dev|sources|javadoc)).jar
@@ -228,10 +226,54 @@ jobs:
           version: ${{ steps.meta.outputs.version }}+mc26.1.2-neoforge
           version-type: release
           loaders: neoforge
-          dependencies: rinku(required)
           game-versions: '26.1.2'
           changelog: ${{ steps.notes.outputs.body }}
           files: versions/26.1.2-neoforge/build/libs/!(*-@(dev|sources|javadoc)).jar
+
+      - name: Publish 26.2 Fabric to Modrinth
+        if: steps.check.outputs.release == 'true' && steps.check.outputs.fabric == 'true'
+        uses: Kir-Antipov/mc-publish@v3.3
+        with:
+          modrinth-id: tDw1xQja
+          modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
+          modrinth-featured: false
+          name: WebGUI ${{ steps.meta.outputs.version }} (26.2 Fabric)
+          version: ${{ steps.meta.outputs.version }}+mc26.2-fabric
+          version-type: release
+          loaders: fabric
+          game-versions: '26.2'
+          changelog: ${{ steps.notes.outputs.body }}
+          files: versions/26.2-fabric/build/libs/!(*-@(dev|sources|javadoc)).jar
+
+      - name: Publish 26.3 Fabric to Modrinth
+        if: steps.check.outputs.release == 'true' && steps.check.outputs.fabric == 'true'
+        uses: Kir-Antipov/mc-publish@v3.3
+        with:
+          modrinth-id: tDw1xQja
+          modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
+          modrinth-featured: false
+          name: WebGUI ${{ steps.meta.outputs.version }} (26.3 Fabric)
+          version: ${{ steps.meta.outputs.version }}+mc26.3-fabric
+          version-type: beta
+          loaders: fabric
+          game-versions: '26.3'
+          changelog: ${{ steps.notes.outputs.body }}
+          files: versions/26.3-fabric/build/libs/!(*-@(dev|sources|javadoc)).jar
+
+      - name: Publish 26.3 NeoForge to Modrinth
+        if: steps.check.outputs.release == 'true' && steps.check.outputs.neoforge == 'true'
+        uses: Kir-Antipov/mc-publish@v3.3
+        with:
+          modrinth-id: tDw1xQja
+          modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
+          modrinth-featured: false
+          name: WebGUI ${{ steps.meta.outputs.version }} (26.3 NeoForge)
+          version: ${{ steps.meta.outputs.version }}+mc26.3-neoforge
+          version-type: beta
+          loaders: neoforge
+          game-versions: '26.3'
+          changelog: ${{ steps.notes.outputs.body }}
+          files: versions/26.3-neoforge/build/libs/!(*-@(dev|sources|javadoc)).jar
 
       # CurseForge — mirrors the Modrinth uploads. Only runs when the CURSEFORGE_ID
       # repo variable is set, and never blocks the (gated) Modrinth release:
@@ -294,7 +336,6 @@ jobs:
           loaders: neoforge
           game-versions: '1.21.1'
           changelog: ${{ steps.notes.outputs.body }}
-          dependencies: rinku(required)
           files: versions/1.21.1-neoforge/build/libs/!(*-@(dev|sources|javadoc)).jar
 
       - name: Publish 1.21.11 NeoForge to CurseForge
@@ -310,7 +351,6 @@ jobs:
           loaders: neoforge
           game-versions: '1.21.11'
           changelog: ${{ steps.notes.outputs.body }}
-          dependencies: rinku(required)
           files: versions/1.21.11-neoforge/build/libs/!(*-@(dev|sources|javadoc)).jar
 
       - name: Publish 26.2 NeoForge to CurseForge
@@ -326,7 +366,6 @@ jobs:
           loaders: neoforge
           game-versions: '26.2'
           changelog: ${{ steps.notes.outputs.body }}
-          dependencies: rinku(required)
           files: versions/26.2-neoforge/build/libs/!(*-@(dev|sources|javadoc)).jar
 
       - name: Publish 26.1.2 NeoForge to CurseForge
@@ -342,8 +381,52 @@ jobs:
           loaders: neoforge
           game-versions: '26.1.2'
           changelog: ${{ steps.notes.outputs.body }}
-          dependencies: rinku(required)
           files: versions/26.1.2-neoforge/build/libs/!(*-@(dev|sources|javadoc)).jar
+
+      - name: Publish 26.2 Fabric to CurseForge
+        if: steps.check.outputs.release == 'true' && steps.check.outputs.fabric == 'true' && vars.CURSEFORGE_ID != ''
+        continue-on-error: true
+        uses: Kir-Antipov/mc-publish@v3.3
+        with:
+          curseforge-id: ${{ vars.CURSEFORGE_ID }}
+          curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
+          name: WebGUI ${{ steps.meta.outputs.version }} (26.2 Fabric)
+          version: ${{ steps.meta.outputs.version }}+mc26.2-fabric
+          version-type: release
+          loaders: fabric
+          game-versions: '26.2'
+          changelog: ${{ steps.notes.outputs.body }}
+          files: versions/26.2-fabric/build/libs/!(*-@(dev|sources|javadoc)).jar
+
+      - name: Publish 26.3 Fabric to CurseForge
+        if: steps.check.outputs.release == 'true' && steps.check.outputs.fabric == 'true' && vars.CURSEFORGE_ID != ''
+        continue-on-error: true
+        uses: Kir-Antipov/mc-publish@v3.3
+        with:
+          curseforge-id: ${{ vars.CURSEFORGE_ID }}
+          curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
+          name: WebGUI ${{ steps.meta.outputs.version }} (26.3 Fabric)
+          version: ${{ steps.meta.outputs.version }}+mc26.3-fabric
+          version-type: beta
+          loaders: fabric
+          game-versions: '26.3'
+          changelog: ${{ steps.notes.outputs.body }}
+          files: versions/26.3-fabric/build/libs/!(*-@(dev|sources|javadoc)).jar
+
+      - name: Publish 26.3 NeoForge to CurseForge
+        if: steps.check.outputs.release == 'true' && steps.check.outputs.neoforge == 'true' && vars.CURSEFORGE_ID != ''
+        continue-on-error: true
+        uses: Kir-Antipov/mc-publish@v3.3
+        with:
+          curseforge-id: ${{ vars.CURSEFORGE_ID }}
+          curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
+          name: WebGUI ${{ steps.meta.outputs.version }} (26.3 NeoForge)
+          version: ${{ steps.meta.outputs.version }}+mc26.3-neoforge
+          version-type: beta
+          loaders: neoforge
+          game-versions: '26.3'
+          changelog: ${{ steps.notes.outputs.body }}
+          files: versions/26.3-neoforge/build/libs/!(*-@(dev|sources|javadoc)).jar
 
       # mc-publish can report success without actually creating a version (e.g.
       # a token lacking the "Create versions" scope). Confirm every version is

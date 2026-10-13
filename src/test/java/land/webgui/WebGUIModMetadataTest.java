@@ -98,7 +98,11 @@ class WebGUIModMetadataTest {
         }
         if (neoforge != null) {
             assertContains(neoforge, "authors = \"KoSHeroff\"", "neoforge.mods.toml names the author");
-            assertContains(neoforge, "logoFile = \"icon-256.png\"", "declares a logo file");
+            // Either spelling: the build renames logoFile to iconFile from 26.3. What matters
+            // is that an icon is declared and that the file it names is shipped.
+            assertTrue(neoforge.contains("logoFile = \"icon-256.png\"")
+                            || neoforge.contains("iconFile = \"icon-256.png\""),
+                    "declares an icon file, under whichever key this version uses");
             assertContains(neoforge, "displayURL", "links to the homepage");
             assertContains(neoforge, "issueTrackerURL", "links to the issue tracker");
         }

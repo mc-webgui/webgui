@@ -1,14 +1,8 @@
 package land.webgui;
 
-//? if fabric {
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-//? } else {
-/*import net.minecraft.ChatFormatting;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.network.chat.Component;*/
-//? }
+import net.minecraft.network.chat.Component;
 
 /**
  * Client half of the join handshake: what the server said it is running.
@@ -46,23 +40,7 @@ public final class WebGUIHandshake {
                 + " versions match.";
     }
 
-    //? if fabric {
     public static void onHello(int protocol, String version) {
-        serverProtocol = protocol;
-        serverVersion = version == null ? "" : version;
-        if (protocol == WebviewNetworking.PROTOCOL_VERSION) {
-            return;
-        }
-        WebGUIMod.LOGGER.warn("webgui: server runs {} (protocol {}), client is {} (protocol {})",
-                serverVersion, protocol, WebGUIVersion.current(), WebviewNetworking.PROTOCOL_VERSION);
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client.player != null) {
-            client.player.sendMessage(
-                    Text.literal(mismatchText(protocol, serverVersion)).formatted(Formatting.RED), false);
-        }
-    }
-    //? } else {
-    /*public static void onHello(int protocol, String version) {
         serverProtocol = protocol;
         serverVersion = version == null ? "" : version;
         if (protocol == WebviewNetworking.PROTOCOL_VERSION) {
@@ -75,13 +53,12 @@ public final class WebGUIHandshake {
             // 26 dropped Player.displayClientMessage and gave LocalPlayer its own
             // sendSystemMessage instead.
             //? if >=26 {
-            client.player.sendSystemMessage(
+            /*client.player.sendSystemMessage(
                     Component.literal(mismatchText(protocol, serverVersion)).withStyle(ChatFormatting.RED));
-            //? } else {
+            *///? } else {
             client.player.displayClientMessage(
                     Component.literal(mismatchText(protocol, serverVersion)).withStyle(ChatFormatting.RED), false);
             //? }
         }
-    }*/
-    //? }
+    }
 }

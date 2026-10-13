@@ -1,6 +1,7 @@
 {
   "key.webgui.main_menu": "Main menu",
   "key.webgui.hud_interactive": "HUD: interactive mode",
+  "key.webgui.devtools": "Developer tools",
   "key.categories.webgui.web": "WebGUI",
   "screen.webgui.title": "Web",
   "screen.webgui.url": "URL",
@@ -9,8 +10,17 @@
   "message.webgui.hud_interactive_off": "Web HUD: view only. Press the interactive mode key to enable input.",
   "screen.webgui.settings.title": "WebGUI Settings",
   "screen.webgui.settings.devtools": "Page developer tools",
-  "screen.webgui.settings.devtools.hint1": "Writes browser errors, failed requests and console output",
-  "screen.webgui.settings.devtools.hint2": "to the game log. For developing pages, not for playing.",
   "screen.webgui.settings.inspector.on": "Chrome DevTools: open %s in a browser",
-  "screen.webgui.settings.inspector.off": "For the full inspector, add this launcher game argument:"
+  "screen.webgui.settings.inspector.off": "The inspector opens after a restart.",
+  "screen.webgui.settings.scroll": "Scroll speed",
+  "screen.webgui.settings.scroll.tip": "How far one notch of the wheel carries a page. The game counts one notch where a browser counts several lines, so at low values a page moves less than the hand expects.",
+  "screen.webgui.settings.framerate": "Page frame rate",
+  "screen.webgui.settings.framerate.value": "%s fps",
+  "screen.webgui.settings.framerate.unlimited": "Unlimited",
+  "screen.webgui.settings.framerate.tip": "How often a page may repaint. Higher is smoother and costs more CPU and GPU; a page that only shows text gains nothing from it. Unlimited leaves the choice to the browser.",
+  "screen.webgui.settings.downloads": "Ask where to save downloads",
+  "screen.webgui.settings.downloads.tip": "Off: a file a page offers is saved into webgui-downloads/ beside the game and you are told the name. On: the system save dialog opens for each one. Takes effect after a restart.",
+  "screen.webgui.settings.autoplay": "Let pages play sound on their own",
+  "screen.webgui.settings.autoplay.tip": "Off: video and audio on a page wait until you click it, the way a browser treats a tab you did not open. On: a page may start playing by itself. Takes effect after a restart.",
+  "screen.webgui.settings.devtools.tip": "Writes browser errors, failed requests and console output to the game log, and opens the inspector on F12. Off by default: it makes the log noisy. Takes effect after a restart."
 }

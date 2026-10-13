@@ -3,16 +3,13 @@ package land.webgui;
 import land.webgui.server.EntityBinding;
 import land.webgui.server.WebviewEntityContext;
 import land.webgui.server.WebviewPlaceholders;
-//? if fabric {
-import net.fabricmc.fabric.api.event.player.UseEntityCallback;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-//? } else {
-/*import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.neoforged.neoforge.common.NeoForge;
+//? if fabric {
+import net.fabricmc.fabric.api.event.player.UseEntityCallback;
+//? } else {
+/*import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;*/
 //? }
 
@@ -22,19 +19,19 @@ public final class EntityInteractionListener {
     //? if fabric {
     public static void register() {
         UseEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
-            if (hand != Hand.MAIN_HAND) return ActionResult.PASS;
-            if (world.isClient()) return ActionResult.PASS;
+            if (hand != InteractionHand.MAIN_HAND) return InteractionResult.PASS;
+            if (world.isClientSide()) return InteractionResult.PASS;
 
-            var opt = EntityBindingStore.get(entity.getUuid());
-            if (opt.isEmpty()) return ActionResult.PASS;
+            var opt = EntityBindingStore.get(entity.getUUID());
+            if (opt.isEmpty()) return InteractionResult.PASS;
 
-            ServerPlayerEntity sp = (ServerPlayerEntity) player;
+            ServerPlayer sp = (ServerPlayer) player;
             EntityBinding b = opt.get();
             String url = WebviewPlaceholders.resolve(b.urlTemplate(), sp, entity);
             String entityJson = WebviewEntityContext.buildJson(entity);
             WebviewNetworking.openGuiForEntity(sp, url, entityJson);
 
-            return b.cancelInteraction() ? ActionResult.SUCCESS : ActionResult.PASS;
+            return b.cancelInteraction() ? InteractionResult.SUCCESS : InteractionResult.PASS;
         });
     }
     //? } else {

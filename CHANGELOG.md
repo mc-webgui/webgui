@@ -1,5 +1,40 @@
 # Changelog
 
+## 2.0.0 - 2026-10-13
+
+A major version for one reason: WebGUI no longer depends on another mod. Nothing in the page
+API changed and the network protocol is the same, so existing pages keep working and a 2.0.0
+client still talks to a 1.8.x server.
+
+### Added
+- **Minecraft 26.2 on Fabric, and 26.3 on both loaders.** 26.3 is published as a beta: the game itself is still in snapshots, and it replaced GLFW with SDL and moved the GPU API out of `blaze3d`, so the parts of this mod that touch the window and the screen are new there.
+
+### Changed
+- **The update check is built in and always runs.** The server asks Modrinth on start whether a newer WebGUI exists for its Minecraft version and loader, and falls back to GitHub releases if Modrinth cannot be reached. It used to do nothing at all unless an operator found `updateCheckUrl` and filled in an endpoint of their own, which almost nobody did.
+  - Operators are also told in chat when they join, so an update is not something only the start-up log knows. Set `updateNotifyInChat` to `false` to keep the console notice and drop the chat one. Ordinary players are never told.
+  - **`updateCheckUrl` is gone.** The address is fixed in the mod now. A config that still has the key is not an error; it is ignored.
+- **A page URL must now name a scheme the mod will open:** `webgui://`, `https://`, `http://`, `wss://` or `ws://`. Anything else is refused with a line in the log instead of being handed to the browser — a URL arrives from a server, and `file://` would read the player's disk while `javascript:` would run inside whatever page is open.
+  - `webgui:name.html` and `webgui:/name.html` used to mean the same as `webgui://name.html` and no longer do. One spelling is easier to check than three. Settings that use the old form need the two slashes.
+- **A server now starts with a HUD page as well as a full-screen one.** `config/webgui/web/hud.html` is created beside `index.html` on first start: a small corner card naming the keys — <kbd>F6</kbd> for the main menu, <kbd>`</kbd> to interact with the overlay, <kbd>F12</kbd> for developer tools — and linking to webgui.space. It paints no background of its own, which is what an overlay drawn over the world has to do.
+  - It is shown on join out of the box: `autoHudUrl` points at it and `autoHudOnJoin` is now on unless the config says otherwise. A server that set either of them keeps what it set.
+- **The mod's settings screen now explains itself.** Every option has a tooltip saying what it does and what it costs, in the spirit of the game's own video settings, and two more settings are there instead of only in the config file:
+  - **Ask where to save downloads.** Off, a file goes into `webgui-downloads/` and the name is said in chat; on, the system save dialog opens for each one. The engine could always do this and the mod never offered it.
+  - **Let pages play sound on their own.** Off by default, as it already was: video and audio wait for a click, the way a browser treats a tab you did not open.
+  - **Page frame rate** was in the config file and nowhere else; it is now a setting like the rest.
+  - The screen used to tell everyone to add `--remote-debugging-port=9222` to their launcher. That was true of the old browser library, whose command line was fixed before any mod ran; this one takes the port from the mod, so the advice was for a problem that no longer exists. The inspector's address is shown when it is actually listening, and only while the developer tools are on.
+- **Scrolling a page starts at 25 notches instead of 7,** and the setting now goes to 40. Seven was picked to fix a wheel that barely moved, and it still read as slow on a long page. A client that already has the setting saved keeps its own value; it is in the mod's settings screen either way.
+- **The main-menu key no longer opens `example.com`.** That placeholder was what a player saw after installing the mod and pressing the key on the title screen, where no server has sent any settings yet. It now opens webgui.space, which at least says what the key is for.
+- **`mainMenuUrl` now points at the server's own page out of the box.** A fresh server writes `webgui://index.html` into its config, which is the starter page it also creates, so the key that opens the main menu shows something of the server's from the first launch instead of `example.com`. A config that already has the setting is left alone.
+- **WebGUI no longer needs another mod to run.** The embedded browser is part of WebGUI now instead of being provided by a separate library mod, so installing WebGUI is one file and nothing else. Chromium itself is still downloaded once per machine on first start, outside the game directory, and shared by every instance.
+
+### Fixed
+- **The custom death screen on Fabric 26.2 and later.** It hooked a method the game no longer has, which the mixin configuration treats as fatal — the game would not start at all on those versions.
+- **The game can be closed again.** Quitting left two threads running — the page server and Chromium — so the process never exited: silently on 1.21.1 and earlier, and from 1.21.11 as a crash report written by the game's own shutdown watchdog.
+- **Typing into a page on 26.3.** SDL only delivers typed characters while text input has been started, and the game starts it for its own text fields. Keys arrived and shortcuts such as Ctrl+A and Ctrl+V worked, but letters did not reach the page.
+- **Cursor shapes on 26.3.** The cursor is now decided once per frame by the game, so setting it directly was overwritten before it could be seen.
+- **Enter in a page.** It never produced a character event, on any version, so a `textarea` took every key but this one and a form could not be submitted with it.
+- A NeoForge warning on every launch of 26.3 about deprecated mod metadata.
+
 ## 1.8.1 - 2026-09-12
 
 ### Fixed

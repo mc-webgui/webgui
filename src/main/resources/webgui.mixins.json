@@ -4,8 +4,7 @@
   "package": "land.webgui.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
-    "MouseMixin",
-    "CefUtilMixin"
+    "MouseMixin"
   ],
   "injectors": {
     "defaultRequire": 1

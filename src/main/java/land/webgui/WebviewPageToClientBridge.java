@@ -1,13 +1,14 @@
 package land.webgui;
 
-import de.keksuccino.rinku.Rinku;
+import land.webgui.compat.Mc;
+import land.webgui.browser.WebBrowser;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 //? if fabric {
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 //? } else {
 /*import net.minecraft.client.Minecraft;
 //? if >=1.21.5 {
@@ -43,7 +44,9 @@ public final class WebviewPageToClientBridge {
                 return true;
             }
         }, true);
-        Rinku.getClient().getHandle().addMessageRouter(router);
+        // Additive, unlike the display and load handlers: java-cef keeps a list of routers,
+        // so this one sits beside the engine's own plumbing rather than on top of it.
+        WebBrowser.client().addMessageRouter(router);
     }
 
     private static void dispatch(CefFrame frame, String request, CefQueryCallback callback) {
@@ -55,7 +58,7 @@ public final class WebviewPageToClientBridge {
         JsonObject obj = tryParseObject(request);
 
         if (obj == null) {
-            WebGUIMod.LOGGER.info("[webgui page→game] {}", request);
+            WebGUIMod.LOGGER.debug("[webgui page→game] {}", request);
             callback.success("{\"ok\":true}");
             return;
         }
@@ -71,29 +74,11 @@ public final class WebviewPageToClientBridge {
                 log(level, msg);
             }
             case "close" -> {
-                //? if fabric {
-                MinecraftClient mc = MinecraftClient.getInstance();
-                //? } else {
-                /*Minecraft mc = Minecraft.getInstance();*/
-                //? }
+                Minecraft mc = Minecraft.getInstance();
                 mc.execute(() -> {
-                    //? if fabric {
-                    if (mc.currentScreen instanceof WebViewScreen) {
-                        mc.currentScreen.close();
-                    //? } else {
-                    /*//? if >=26.2-neoforge {
-                    if (mc.gui.screen() instanceof WebViewScreen) {
-                        mc.gui.screen().onClose();
-                    //? } else {
-                    if (mc.screen instanceof WebViewScreen) {
-                        mc.screen.onClose();
-                    //? }*/
-                    //? }
-                    //? if fabric {
+                    if (Mc.screen(mc) instanceof WebViewScreen) {
+                        Mc.screen(mc).onClose();
                     } else if (WebHudOverlay.isHudVisible()) {
-                    //? } else {
-                    /*} else if (WebHudOverlay.isHudVisible()) {*/
-                    //? }
                         WebHudOverlay.toggleHud(mc);
                     }
                 });
@@ -107,11 +92,7 @@ public final class WebviewPageToClientBridge {
             // actually standing in for the death screen — otherwise any page could
             // respawn a living player.
             case "respawn" -> {
-                //? if fabric {
-                MinecraftClient mc = MinecraftClient.getInstance();
-                //? } else {
-                /*Minecraft mc = Minecraft.getInstance();*/
-                //? }
+                Minecraft mc = Minecraft.getInstance();
                 mc.execute(() -> {
                     if (!WebGUIDeathScreen.active() || mc.player == null) {
                         return;
@@ -123,11 +104,7 @@ public final class WebviewPageToClientBridge {
                     // away — which this very interceptor then replaces with a
                     // second browser nothing closes. Vanilla closes the screen on
                     // its own once the respawn lands.
-                    //? if fabric {
-                    mc.player.requestRespawn();
-                    //? } else {
-                    /*mc.player.respawn();*/
-                    //? }
+                    mc.player.respawn();
                     WebSession.dispose();
                 });
             }
@@ -150,42 +127,25 @@ public final class WebviewPageToClientBridge {
                     callback.failure(-5, "command too long");
                     return;
                 }
-                //? if fabric {
-                MinecraftClient mc = MinecraftClient.getInstance();
-                mc.execute(() -> {
-                    if (mc.player != null && mc.getNetworkHandler() != null) {
-                        mc.player.networkHandler.sendChatCommand(raw);
-                    }
-                });
-                //? } else {
-                /*Minecraft mc = Minecraft.getInstance();
+                Minecraft mc = Minecraft.getInstance();
                 mc.execute(() -> {
                     if (mc.player != null && mc.getConnection() != null) {
                         mc.player.connection.sendCommand(raw);
                     }
-                });*/
-                //? }
+                });
             }
             default -> {
                 if (request.length() > WebviewPayloads.MAX_EVENT_DATA_LENGTH) {
                     WebGUIMod.LOGGER.warn("[webgui page→game] [{}] payload too large ({} bytes), dropping", channel, request.length());
                     break;
                 }
-                //? if fabric {
-                MinecraftClient mc = MinecraftClient.getInstance();
-                //? } else {
-                /*Minecraft mc = Minecraft.getInstance();*/
-                //? }
-                //? if fabric {
-                if (mc.getNetworkHandler() != null) {
-                //? } else {
-                /*if (mc.getConnection() != null) {*/
-                //? }
+                Minecraft mc = Minecraft.getInstance();
+                if (mc.getConnection() != null) {
                     String ch  = channel;
                     String pay = request;
                     mc.execute(() -> sendToServer(ch, pay));
                 } else {
-                    WebGUIMod.LOGGER.info("[webgui page→game] [{}] {}", channel, request);
+                    WebGUIMod.LOGGER.debug("[webgui page→game] [{}] {}", channel, request);
                 }
             }
         }
@@ -205,13 +165,13 @@ public final class WebviewPageToClientBridge {
     private static void sendToServer(String channel, String jsonPayload) {
         //? if fabric {
         //? if >=1.20.5 {
-        if (ClientPlayNetworking.canSend(WebviewPayloads.WebviewPageEventC2SPayload.ID)) {
+        if (ClientPlayNetworking.canSend(WebviewPayloads.WebviewPageEventC2SPayload.TYPE)) {
             ClientPlayNetworking.send(new WebviewPayloads.WebviewPageEventC2SPayload(channel, jsonPayload));
         }
         //? } else {
-        /*net.minecraft.network.PacketByteBuf buf = net.fabricmc.fabric.api.networking.v1.PacketByteBufs.create();
-        buf.writeString(channel, WebviewPayloads.MAX_EVENT_NAME_LENGTH);
-        buf.writeString(jsonPayload, WebviewPayloads.MAX_EVENT_DATA_LENGTH);
+        /*net.minecraft.network.FriendlyByteBuf buf = net.fabricmc.fabric.api.networking.v1.PacketByteBufs.create();
+        buf.writeUtf(channel, WebviewPayloads.MAX_EVENT_NAME_LENGTH);
+        buf.writeUtf(jsonPayload, WebviewPayloads.MAX_EVENT_DATA_LENGTH);
         ClientPlayNetworking.send(WebviewPayloads.PAGE_EVENT_CHANNEL, buf);*/
         //? }
         //? } else {

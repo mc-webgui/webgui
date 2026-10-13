@@ -1,0 +1,118 @@
+:root {
+  --bg: #11141a;
+  --panel: #1a1f29;
+  --line: #2c3444;
+  --text: #e6e9ef;
+  --dim: #99a1b3;
+  --ok: #68d391;
+  --warn: #f6c177;
+  --bad: #f07178;
+  --link: #7aa2f7;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+/* The HUD is drawn over the world, so it must not paint a background of its own.
+   Both elements, not just body: a background on html paints the canvas all the same,
+   and a page that sets one covers the game. This is the usual first mistake. */
+html.hud, body.hud { background: transparent; }
+body.hud .wrap { max-width: none; padding: 10px; }
+body.hud .panel { background: rgba(17, 20, 26, .78); }
+
+.wrap { max-width: 860px; margin: 0 auto; padding: 20px; }
+
+h1 { font-size: 20px; margin: 0 0 4px; }
+h2 { font-size: 15px; margin: 0 0 10px; color: var(--dim); font-weight: 600; }
+p  { margin: 0 0 10px; }
+
+.sub { color: var(--dim); margin-bottom: 18px; }
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+button {
+  font: inherit;
+  color: var(--text);
+  background: #273041;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 7px 12px;
+  cursor: pointer;
+}
+button:hover { background: #313c51; }
+button:active { background: #202836; }
+
+input[type="text"], input[type="password"], textarea, select {
+  font: inherit;
+  color: var(--text);
+  background: #0e1218;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 7px 10px;
+}
+textarea { width: 100%; min-height: 70px; resize: vertical; }
+
+a { color: var(--link); }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; }
+
+.card {
+  display: block;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px 16px;
+  text-decoration: none;
+  color: var(--text);
+}
+.card:hover { border-color: var(--link); }
+.card b { display: block; margin-bottom: 4px; }
+.card span { color: var(--dim); font-size: 13px; }
+
+.kv { display: grid; grid-template-columns: 150px 1fr; gap: 4px 12px; font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
+.kv div:nth-child(odd) { color: var(--dim); }
+
+.log {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 12px;
+  background: #0e1218;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 10px;
+  height: 150px;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
+.ok  { color: var(--ok); }
+.bad { color: var(--bad); }
+.dim { color: var(--dim); }
+
+.tall { height: 1400px; background: linear-gradient(#1a1f29, #11141a 40%, #1a1f29); border-radius: 6px; padding: 12px; }
+.ruler { color: var(--dim); font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
+
+.cursors { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
+.cursors div {
+  border: 1px dashed var(--line);
+  border-radius: 6px;
+  padding: 14px 8px;
+  text-align: center;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 12px;
+  color: var(--dim);
+}
