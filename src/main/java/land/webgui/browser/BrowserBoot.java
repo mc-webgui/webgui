@@ -56,13 +56,20 @@ public final class BrowserBoot {
         Path gameDirectory = Paths.get("").toAbsolutePath().normalize();
         RuntimeSettings settings = RuntimeSettings.defaults()
                 .gameDirectory(gameDirectory)
-                .extraArguments(CHROMIUM_FLAGS)
-                .downloads(RuntimeSettings.Downloads.defaults().into(gameDirectory.resolve(DOWNLOADS)));
+                .extraArguments(CHROMIUM_FLAGS);
 
         // Read here rather than waited for: this runs before the client finishes starting,
         // and Chromium takes its debugging port once, when it starts. Loading twice is
         // harmless — it re-reads the same file.
         land.webgui.WebGUIClientConfig.load();
+
+        // Both are read once, here, because Chromium takes them when it starts. The settings
+        // screen says so rather than letting a player wonder why nothing changed.
+        settings = settings
+                .allowAutoplay(land.webgui.WebGUIClientConfig.allowPageAutoplay())
+                .downloads(RuntimeSettings.Downloads.defaults()
+                        .into(gameDirectory.resolve(DOWNLOADS))
+                        .asking(land.webgui.WebGUIClientConfig.askWhereToSaveDownloads()));
 
         // Set rather than read. With Rinku this port could only be reported, because the one
         // command line that mattered was fixed before any mod ran; here it is ours to choose —
@@ -76,6 +83,7 @@ public final class BrowserBoot {
         }
         if (port > 0) {
             settings = settings.remoteDebuggingPort(port);
+            land.webgui.WebGUIRemoteDebugging.started(port);
             land.webgui.WebGUIMod.LOGGER.info(
                     "webgui: the page inspector is available on http://127.0.0.1:{}", port);
         }

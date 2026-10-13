@@ -9,11 +9,18 @@
   "message.webgui.hud_interactive_on": "Веб-HUD: интерактивный режим (псевдо-GUI). Нажмите снова для выхода.",
   "message.webgui.hud_interactive_off": "Веб-HUD: только просмотр. Нажмите клавишу интерактивного режима для ввода.",
   "screen.webgui.settings.title": "Настройки WebGUI",
-  "screen.webgui.settings.devtools": "Инструменты разработчика страниц",
-  "screen.webgui.settings.devtools.hint1": "Пишет ошибки браузера, упавшие запросы и вывод консоли",
-  "screen.webgui.settings.devtools.hint2": "С ней же F12 открывает инспектор. Применяется после перезапуска.",
+  "screen.webgui.settings.devtools": "Инструменты разработчика",
   "screen.webgui.settings.inspector.on": "Chrome DevTools: откройте %s в браузере",
-  "screen.webgui.settings.inspector.off": "Для полного инспектора добавьте аргумент запуска игры:",
+  "screen.webgui.settings.inspector.off": "Инспектор откроется после перезапуска.",
   "screen.webgui.settings.scroll": "Скорость прокрутки",
-  "screen.webgui.settings.scroll.hint": "Насколько далеко страницу уносит один щелчок колеса."
+  "screen.webgui.settings.scroll.tip": "На сколько страницу уносит один щелчок колеса. Игра считает щелчки, браузер — строки, поэтому при малых значениях страница двигается меньше, чем ждёт рука.",
+  "screen.webgui.settings.framerate": "Частота отрисовки страницы",
+  "screen.webgui.settings.framerate.value": "%s кадр/с",
+  "screen.webgui.settings.framerate.unlimited": "Без ограничения",
+  "screen.webgui.settings.framerate.tip": "Как часто странице разрешено перерисовываться. Выше — плавнее и дороже по процессору и видеокарте; странице из одного текста это ничего не даёт. «Без ограничения» оставляет выбор браузеру.",
+  "screen.webgui.settings.downloads": "Спрашивать, куда сохранять",
+  "screen.webgui.settings.downloads.tip": "Выключено: файл со страницы попадает в webgui-downloads рядом с игрой, имя сообщается в чат. Включено: на каждый файл открывается системное окно сохранения. Применится после перезапуска.",
+  "screen.webgui.settings.autoplay": "Разрешить страницам звук без спроса",
+  "screen.webgui.settings.autoplay.tip": "Выключено: видео и звук на странице ждут вашего клика, как браузер поступает с вкладкой, которую вы не открывали. Включено: страница может заиграть сама. Применится после перезапуска.",
+  "screen.webgui.settings.devtools.tip": "Пишет в игровой лог ошибки браузера, неудавшиеся запросы и вывод консоли, а также открывает инспектор по F12. По умолчанию выключено: лог становится шумным. Применится после перезапуска."
 }

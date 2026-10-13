@@ -40,6 +40,12 @@ public final class WebGUIClientConfig {
      */
     private int scrollNotches = 25;
 
+    /** Whether Chromium opens the system save dialog instead of filing downloads itself. */
+    private boolean askWhereToSaveDownloads = false;
+
+    /** Whether a page may start audio or video without the player touching it first. */
+    private boolean allowPageAutoplay = false;
+
     private static WebGUIClientConfig instance = new WebGUIClientConfig();
 
     private WebGUIClientConfig() {}
@@ -105,6 +111,39 @@ public final class WebGUIClientConfig {
             return;
         }
         instance.devTools = value;
+        save();
+    }
+
+    public static boolean askWhereToSaveDownloads() {
+        return instance.askWhereToSaveDownloads;
+    }
+
+    public static void setAskWhereToSaveDownloads(boolean value) {
+        if (instance.askWhereToSaveDownloads == value) {
+            return;
+        }
+        instance.askWhereToSaveDownloads = value;
+        save();
+    }
+
+    public static boolean allowPageAutoplay() {
+        return instance.allowPageAutoplay;
+    }
+
+    public static void setAllowPageAutoplay(boolean value) {
+        if (instance.allowPageAutoplay == value) {
+            return;
+        }
+        instance.allowPageAutoplay = value;
+        save();
+    }
+
+    public static void setBrowserFrameRate(int value) {
+        int wanted = Math.max(0, value);
+        if (instance.browserFrameRate == wanted) {
+            return;
+        }
+        instance.browserFrameRate = wanted;
         save();
     }
 }
